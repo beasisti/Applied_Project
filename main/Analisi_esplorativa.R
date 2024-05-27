@@ -2,6 +2,7 @@
 library(dplyr)
 library(ggplot2)
 library(lubridate)
+library(MASS)
 
 
 data <- read.csv('./Datasets/top20_products.csv')
@@ -180,4 +181,31 @@ ggplot(data, aes(x = factor(Month), y = Sconto)) +
        y = "Sconto (%)") +
   theme_minimal() +
   scale_x_discrete(labels = month.abb)
+
+
+# Histogram  -------------------------------------------------------------------
+
+ggplot(data, aes(x = Vendite.in.Valore)) + 
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
+  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+
+ggplot(data, aes(x = Vendite.in.Valore.Senza.promozioni)) + 
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
+  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+
+ggplot(data, aes(x = Vendite.in.Valore.Con.promozioni)) + 
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
+  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+
+ggplot(data, aes(x = Log_Sales.Value)) + 
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
+  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+
+ggplot(data, aes(x = Vendite.in.Volume.Senza.promozioni)) + 
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
+  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+
+ggplot(data, aes(x = Vendite.in.Volume.Con.promozioni)) + 
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
+  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
 
