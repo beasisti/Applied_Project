@@ -78,12 +78,23 @@ corrplot(cor_matrix, method = 'color', type = 'full',
 
 rm(numeric_vars)
 
-# Linear regression for Volume Sales -------------------------------------------------------------------
 
-# log of the response (look at the histogram)
+# Take a look at data -------------------------------------------------------------------
+
+ggplot(data, aes(x = Vendite.in.Volume)) + 
+  geom_histogram(binwidth = 1000, fill = "grey", color = "skyblue") +
+  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+
+hist(data$Prezzo_Sconto, prob = T, xlab = 'Prezzo con Sconto')
+hist(data$Prezzo_NoSconto, prob = T, xlab = 'Prezzo senza Sconto')
+
+# apply the log 
 data <- data %>%
   mutate(Vendite.in.Volume.log = log(Vendite.in.Volume),
          Prezzo_Sconto.log = log(Prezzo_Sconto))
+
+
+# Linear regression for Volume Sales -------------------------------------------------------------------
 
 model.0 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                   Sconto.Solo.Special.Pack + Sconto.Solo.Volantino + 
@@ -119,14 +130,28 @@ plot(model.3)
 
 
 model.4 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                 Sconto.Solo.Volantino + 
+                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                 is_summer + Year + Prezzo_NoSconto:as.factor(Product), data = data)
+summary(model.4)
+# 
+volume.lag <- 
+model.5 <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                is_summer + Year, data = data)
-summary(model.4) # 0.443
-plot(model.4)
+                is_summer + Year, data = data, index = c("Product"))
+summary(model.5) # 0.443
+y <- as.numeric(fitted(model.5))
+res <- as.numeric(residuals(model.5))
+plot(y,res)
+ 
+
 
 # vanno sicuramente tolte delle osservazioni outlier / leverage
-
+leverage <- hatvalues(model.4)
+plot(leverage)
+data.1 <- data[leverage <= 0.015, ]
+# non riesco a fittare il modello model.4
 
 # Prediction
 

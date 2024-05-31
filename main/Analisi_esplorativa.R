@@ -197,7 +197,7 @@ ggplot(data, aes(x = Vendite.in.Valore.Con.promozioni)) +
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
   labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
 
-ggplot(data, aes(x = Log_Sales.Value)) + 
+ggplot(data, aes(x = Vendite.in.Volume)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
   labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
 
