@@ -11,6 +11,7 @@ library(lubridate)
 library(tidyr)
 library(plm)
 
+
 # Creating Dataset for Regression -------------------------------------------------------------------
 
 data <- read.csv('./Datasets/top20_products.csv')
@@ -20,6 +21,30 @@ data$Year <- year(data$Time)
 data$Month <- month(data$Time)
 data <- data %>%
   mutate_at(vars(8:38), as.factor)
+
+data <- data %>%
+  mutate(Product = recode(Product,
+                          "MORETTI BIRRA LAGER REGOLARE 4.6 % BOTTIGLIA DI VETRO 66 CL 1 CT - 800143550001" = "Moretti 66 Cl",
+                          "PERONI BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 66 CL 1 CT - 800000106790" = "Peroni 66 Cl",
+                          "HEINEKEN BIRRA LAGER REGOLARE 5 % BOTTIGLIA DI VETRO 66 CL 1 CT - 800689045420" = "Heineken 66 Cl",
+                          "ICHNUSA NON FILTRATA BIRRA LAGER REGOLARE 5 % BOTTIGLIA DI VETRO 50 CL 1 CT - 800689068154" = "Ichnusa non filtrata 50 Cl",
+                          "TUBORG BIRRA LAGER REGOLARE 5 % BOTTIGLIA DI VETRO 66 CL 1 CT - 800000105931" = "Tuborg 66 Cl",
+                          "ICHNUSA BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 66 CL 1 CT - 800689075846" = "Ichnusa 66 Cl",
+                          "PERONI BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800844000000" = "Peroni 33 Cl x 3",
+                          "BECK S BIRRA LAGER REGOLARE 5 % BOTTIGLIA DI VETRO 66 CL 1 CT - 410013092378" = "Beck's 66 Cl",
+                          "MORETTI BIRRA LAGER REGOLARE 4.6 % BOTTIGLIA DI VETRO 396 CL 6 CT - 800689002129" = "Moretti 66 Cl x 6",
+                          "HEINEKEN BIRRA LAGER REGOLARE 5 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800689043416" = "Heineken 33 Cl x 3",
+                          "ICHNUSA BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800689032513" = "Ichnusa 33 Cl x 3",
+                          "MORETTI BIRRA LAGER REGOLARE 4.6 % BOTTIGLIA DI VETRO 198 CL 6 CT - 800143522531" = "Moretti 33 Cl x 6",
+                          "MORETTI BIRRA LAGER REGOLARE 4.6 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800143522521" = "Moretti 33 Cl x 3",
+                          "PERONI NASTRO AZZURRO BIRRA LAGER REGOLARE 5.2 % BOTTIGLIA DI VETRO 66 CL 1 CT - 800000106793" = "Peroni Nastro Azzurro 66 Cl",
+                          "BAVARIA BIRRA PILSNER REGOLARE 5 % BOTTIGLIA DI VETRO 66 CL 1 CT - 871480002489" = "Bavaria 66 Cl",
+                          "BIRRIFICIO ANGELO PORETTI 3 LUPPOLI BIRRA LAGER REGOLARE 4.5 % BOTTIGLIA DI VETRO 66 CL 1 CT - 800795001002" = "Poretti 3 Luppoli 66 Cl",
+                          "PERONI BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 198 CL 6 CT - 800844051001" = "Peroni 33 Cl x 6",
+                          "CORONA BIRRA LAGER REGOLARE 4.6 % BOTTIGLIA DI VETRO 35.5 CL 1 CT - 750000103281" = "Corona 35.5 Cl",
+                          "DREHER BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800689011133" = "Dreher 33 Cl",
+                          "MORETTI BIRRA LAGER REGOLARE 4.6 % LATTINA 66 CL 2 CT - 800143544001" = "Moretti 33 Cl x 2 (lattina)"))
+
 
 colnames(data)[colnames(data) == "Vendite.in.Valore.Solo.Special.Pack"] <- "Sconto.Solo.Special.Pack"
 colnames(data)[colnames(data) == "Vendite.in.Valore.Solo.Volantino"] <- "Sconto.Solo.Volantino"
@@ -74,6 +99,13 @@ data <- data %>%
   mutate(Vendite.in.Volume.Settimana.Precedente = lag(Vendite.in.Volume, default = 0))
 
 
+# add cluster column
+data.cluster <- read.csv('./Datasets/data_cluster.csv')
+data <- merge(data, data.cluster[, c("Product", "cluster", "Time")], by = c("Product", "Time"), all.x = TRUE)
+data$cluster <- as.factor(data$cluster)
+# 2 is for leader, 1 for follower
+
+
 # Correlation plot -------------------------------------------------------------------
 
 numeric_vars <- data[, -c(17,18)] %>% select_if(is.numeric)
@@ -112,51 +144,178 @@ data <- data %>%
 # Linear regression for Volume Sales -------------------------------------------------------------------
 
 model.0 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
-                  Sconto.Solo.Special.Pack + Sconto.Solo.Volantino + 
-                  Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                  Sconto.Solo.Loyalty + is_holiday + is_summer + Month + Year,
-              data = data)
-summary(model.0) # 0.4482
-# the model is significative, even if the R_adj is not really high
-
-model.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                 Sconto.Solo.Special.Pack + Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                is_holiday + is_summer + Month + Year, data = data)
-summary(model.1) # 0.4475 
+                Sconto.Solo.Loyalty + is_holiday + is_summer + Month + Year + cluster,
+              data = data)
+summary(model.0) # 0.6138 
+# the model is significative, with a good R2
 
+model.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                Sconto.Solo.Volantino + 
+                Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                Sconto.Solo.Loyalty + is_holiday + is_summer + Month + Year + cluster,
+              data = data)
+summary(model.1) # 0.6128
 
 model.2 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                is_holiday + is_summer + Month + Year, data = data)
-summary(model.2) # 0.4465 
-
-plot(model.2)
-
+                is_holiday + is_summer + Month + Year + cluster,
+              data = data)
+summary(model.2) # 0.6116
 
 model.3 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                is_holiday + is_summer + Year, data = data)
-summary(model.3)  # 0.4454
-
-plot(model.3)
-
+                is_holiday + is_summer + Year + cluster,
+              data = data)
+summary(model.3) # 0.6104
 
 model.4 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
-                 Sconto.Solo.Volantino + 
-                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                 is_summer + Year, data = data)
-summary(model.4) # 0.443
-
-
- 
-model.5 <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                is_summer + Year, data = data, index = c("Product"))
+                is_summer + Year + cluster,
+              data = data)
+summary(model.4) # 0.6083
+
+model.5 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                Sconto.Solo.Volantino + 
+                Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                is_summer + cluster,
+              data = data) # 0.601
 summary(model.5) 
+
+model.6 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                Sconto.Solo.Volantino + 
+                Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                cluster,
+              data = data) # 0.585
+summary(model.6) 
+
+model.7 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                cluster,
+              data = data) # 0.5664
+summary(model.7) 
+
+# select model.5 (it seems the most complete to me)
+
+
+# Model Diagnostic -------------------------------------------------------------------
+
+par(mfrow = c(2,2))
+plot(model.5)
+
+ad.test(residuals(model.5))
+
+# non molto bene
+
+# proviamo ad aggiungere una dummy sui volumi bassi, potrebbero essere quelli che
+# peggiorano il fit
+
+data$Volumi.bassi <- as.factor(ifelse(data$Vendite.in.Volume < 100, 1, 0))
+
+model.5.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                Sconto.Solo.Volantino + 
+                Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                is_summer + cluster + Volumi.bassi,
+              data = data) # 0.6609
+summary(model.5.1) 
+
+par(mfrow = c(2,2))
+plot(model.5.1)
+# il fit non è comunque bello ma R2 si è alzato
+
+# proviamo a togliere queste osservazioni
+
+
+# Regression without Outliers -------------------------------------------------------------------
+
+
+data.no.out <- data[data$Vendite.in.Volume >= 100, ]
+
+model.no.out <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                Sconto.Solo.Volantino + 
+                Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                is_summer + cluster,
+              data = data.no.out)
+summary(model.no.out) # 0.5397
+
+par(mfrow = c(2,2))
+plot(model.no.out) # omoschedasticità direi ok 
+ad.test(residuals(model.no.out)) # male ma vabbè guardiamo il qqplot e basta
+
+
+# proviamo a togliere i leverage
+
+leverage_values <- hatvalues(model.no.out)
+high_leverage_points <- which(leverage_values > 0.02)
+
+data.clean <- data.no.out[-high_leverage_points, ]
+
+model.clean <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                     Sconto.Solo.Volantino + 
+                     Sconto.Solo.Display + # Sconto.Solo.Riduzione.Prezzo + 
+                     is_summer + cluster,
+                   data = data.no.out)
+summary(model.clean) # 0.5272
+
+par(mfrow = c(2,2))
+plot(model.clean) # ora ok
+ad.test(residuals(model.clean)) # male ma vabbè guardiamo il qqplot e basta
+
+
+# PLM Regression -------------------------------------------------------------------
+
+model.5.2 <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                Sconto.Solo.Volantino + 
+                Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                is_summer + cluster + Volumi.bassi, 
+                data = data, 
+                index = c("Product"))
+summary(model.5.2) # 0.65443
+
+
+residuals <- residuals(model.5.2)
+fitted_values <- as.numeric(fitted(model.5.2))
+
+par(mfrow = c(2, 2))
+
+plot(fitted_values, residuals, main = "Residuals vs Fitted", xlab = "Fitted values", ylab = "Residuals")
+abline(h = 0, col = "red")
+
+qqnorm(residuals)
+qqline(residuals, col = "red", lwd = 2)
+
+plot(fitted_values, sqrt(abs(residuals)), main = "Scale-Location", xlab = "Fitted values", ylab = "Sqrt(|residuals|)")
+abline(h = 0, col = "red")
+
+
+# without outliers 
+
+model.5.2.no.out <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                   Sconto.Solo.Volantino + 
+                   Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                   is_summer + cluster,  
+                   data = data.no.out, 
+                   index = c("Product"))
+summary(model.5.2.no.out) # 0.40383
+
+
+# Lag regression -------------------------------------------------------------------
+
+fit.0 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+              Sconto.Solo.Volantino + 
+              Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+              is_summer + cluster + Volumi.bassi + 
+              Vendite.in.Volume.Settimana.Precedente.log, data = data)
+summary(fit.0)
+
+
+# Prediction -------------------------------------------------------------------
+
+
 y <- as.numeric(fitted(model.5))
 res <- as.numeric(residuals(model.5))
 plot(y,res)
@@ -188,16 +347,3 @@ ggplot(data.brand, aes(x = Time)) +
   theme_minimal()
 
 
-# Lag regression for Volume Sales -------------------------------------------------------------------
-
-model.4 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
-                Sconto.Solo.Volantino + 
-                Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                is_summer + Year + Vendite.in.Volume.Settimana.Precedente.log, data = data)
-summary(model.4)
-
-model.5 <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
-                 Sconto.Solo.Volantino + 
-                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
-                 is_summer + Year, data = data, index = c("Product"))
-summary(model.5) 
