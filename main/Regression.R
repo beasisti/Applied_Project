@@ -10,6 +10,7 @@ library(lme4)
 library(lubridate)
 library(tidyr)
 library(plm)
+library(merTools)
 
 
 # Creating Dataset for Regression -------------------------------------------------------------------
@@ -125,8 +126,9 @@ rm(numeric_vars)
 # Take a look at data -------------------------------------------------------------------
 
 ggplot(data, aes(x = Vendite.in.Volume)) + 
-  geom_histogram(binwidth = 1000, fill = "grey", color = "violet") +
-  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+  geom_histogram(binwidth = 5000, fill = "lightpink", color = "grey") +
+  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza") + 
+  theme_classic()
 
 ggplot(data, aes(x = Vendite.in.Volume.Settimana.Precedente)) + 
   geom_histogram(binwidth = 1000, fill = "grey", color = "skyblue") +
@@ -373,5 +375,218 @@ ggplot(model_summary, aes(y = term, x = estimate)) +
   labs(title = "95% CI for Beta",
        y = "Coefficient",
        x = "")
+
+
+# LMM Product -----------------------------------------------------------------------------
+
+boxplot(residuals(model.5.1) ~ data$Product)
+
+fm1mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                 Sconto.Solo.Volantino + 
+                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                 is_summer + cluster + Volumi.bassi + (1|Product),
+               data = data)
+
+sigma2_eps <- as.numeric(get_variance_residual(fm1mer.0))
+sigma2_eps # var of error
+sigma2_b <- as.numeric(get_variance_random(fm1mer.0))
+sigma2_b # var of random intercept
+PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
+PVRE # 0.6851717
+
+# visualization of the random intercepts with their 95% confidence intervals
+dotplot(ranef(fm1mer.0, condVar=T))
+
+
+fm1mer.1 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                 Sconto.Solo.Volantino + 
+                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                 is_summer + cluster + Volumi.bassi + (1 + Prezzo_Sconto.log|Product),
+               data = data)
+
+sigma2_eps <- as.numeric(get_variance_residual(fm1mer.1))
+sigma2_eps # var of error
+sigma2_b <- as.numeric(get_variance_random(fm1mer.1))
+sigma2_b # var of random intercept
+PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
+PVRE # 0.8935421
+
+# visualization of the random intercepts with their 95% confidence intervals
+dotplot(ranef(fm1mer.1, condVar=T))
+
+anova(fm1mer.0, fm1mer.1) 
+
+
+fm1mer.2 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                   Sconto.Solo.Volantino + 
+                   Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                   is_summer + cluster + Volumi.bassi + 
+                   (1 + Prezzo_Sconto.log + Prezzo_NoSconto|Product),
+                 data = data)
+
+sigma2_eps <- as.numeric(get_variance_residual(fm1mer.2))
+sigma2_eps # var of error
+sigma2_b <- as.numeric(get_variance_random(fm1mer.2))
+sigma2_b # var of random intercept
+PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
+PVRE # 0.9197901
+
+# visualization of the random intercepts with their 95% confidence intervals
+dotplot(ranef(fm1mer.2, condVar=T))
+
+anova(fm1mer.1, fm1mer.2)
+
+# Diagnostic
+# 1) Assessing Assumption on the within-group errors
+plot(fm1mer.2, col = 'black')  ## Pearson and raw residuals are the same now
+qqnorm(resid(fm1mer.2))
+qqline(resid(fm1mer.2), col='red', lwd=2)    
+
+# 2) Assessing Assumption on the Random Effects
+qqnorm(unlist(ranef(fm1mer.2)$Product), main='Normal Q-Q Plot - Random Effects on Intercept')
+qqline(unlist(ranef(fm1mer.2)$Product), col='red', lwd=2)
+
+
+# Prediction on test set
+predictions <- predict(fm1mer.2, newdata = test_data)
+actual <- test_data$Vendite.in.Volume.log
+
+MAE <- mean(abs(predictions - actual)) # 0.4654202 
+MSE <- mean((predictions - actual)^2) # 0.5529891 
+
+pred_intervals <- predictInterval(fm1mer.2, newdata = test_data, n.sims = 1000, level = 0.95)
+
+results <- data.frame(
+  Data = test_data$Time,
+  Product = test_data$Product,
+  Actual = test_data$Vendite.in.Volume.log,
+  Predicted = predictions,  
+  Lower_CI = pred_intervals[, "lwr"],  
+  Upper_CI = pred_intervals[, "upr"] 
+)
+
+
+# prediction for Moretti 
+
+result.moretti <- results[which(results$Product == 'Moretti 66 Cl'),]
+
+ggplot(result.moretti, aes(x = Data)) +
+  geom_line(aes(y = Actual), color = "blue") +
+  geom_point(aes(y = Actual), color = "blue") +
+  geom_line(aes(y = Predicted), color = "orange") +
+  geom_point(aes(y = Predicted), color = "orange") +
+  geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI), alpha = 0.2, fill = "orange") +
+  scale_color_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
+  scale_fill_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
+  theme_minimal() +
+  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti") +
+  theme(legend.position = "bottom")
+
+
+# LMM Brand -----------------------------------------------------------------------------
+
+boxplot(residuals(model.5.1) ~ data$Brand)
+
+fm2mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                 Sconto.Solo.Volantino + 
+                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                 is_summer + cluster + Volumi.bassi + (1|Brand),
+               data = data)
+
+sigma2_eps <- as.numeric(get_variance_residual(fm2mer.0))
+sigma2_eps # var of error
+sigma2_b <- as.numeric(get_variance_random(fm2mer.0))
+sigma2_b # var of random intercept
+PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
+PVRE # 0.6471791
+
+# visualization of the random intercepts with their 95% confidence intervals
+dotplot(ranef(fm2mer.0, condVar=T))
+
+
+fm2mer.1 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                 Sconto.Solo.Volantino + 
+                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                 is_summer + cluster + Volumi.bassi + (1 + Prezzo_Sconto.log|Brand),
+               data = data)
+
+sigma2_eps <- as.numeric(get_variance_residual(fm2mer.1))
+sigma2_eps # var of error
+sigma2_b <- as.numeric(get_variance_random(fm2mer.1))
+sigma2_b # var of random intercept
+PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
+PVRE # 0.906462
+
+# visualization of the random intercepts with their 95% confidence intervals
+dotplot(ranef(fm2mer.1, condVar=T))
+
+anova(fm2mer.0, fm2mer.1) # -> fm2mer.1
+
+
+fm2mer.2 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+                   Sconto.Solo.Volantino + 
+                   Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                   is_summer + cluster + Volumi.bassi + 
+                   (1 + Prezzo_Sconto.log + Prezzo_NoSconto|Brand),
+                 data = data)
+
+sigma2_eps <- as.numeric(get_variance_residual(fm2mer.2))
+sigma2_eps # var of error
+sigma2_b <- as.numeric(get_variance_random(fm2mer.2))
+sigma2_b # var of random intercept
+PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
+PVRE # 0.9278132
+
+# visualization of the random intercepts with their 95% confidence intervals
+dotplot(ranef(fm2mer.2, condVar=T))
+
+anova(fm2mer.1, fm2mer.2) # -> fm2mer.2
+
+# Diagnostic
+# 1) Assessing Assumption on the within-group errors
+plot(fm2mer.2, col = 'black')  ## Pearson and raw residuals are the same now
+qqnorm(resid(fm2mer.2))
+qqline(resid(fm2mer.2), col='red', lwd=2)    
+
+# 2) Assessing Assumption on the Random Effects
+qqnorm(unlist(ranef(fm2mer.2)$Brand), main='Normal Q-Q Plot - Random Effects on Intercept')
+qqline(unlist(ranef(fm2mer.2)$Brand), col='red', lwd=2)
+
+
+# Prediction on test set
+predictions <- predict(fm2mer.2, newdata = test_data)
+actual <- test_data$Vendite.in.Volume.log
+
+MAE <- mean(abs(predictions - actual)) # 0.5439345 
+MSE <- mean((predictions - actual)^2) # 0.6940848 
+
+pred_intervals <- predictInterval(fm2mer.2, newdata = test_data, n.sims = 1000, level = 0.95)
+
+results <- data.frame(
+  Data = test_data$Time,
+  Product = test_data$Product,
+  Actual = test_data$Vendite.in.Volume.log,
+  Predicted = predictions,  
+  Lower_CI = pred_intervals[, "lwr"],  
+  Upper_CI = pred_intervals[, "upr"] 
+)
+
+
+# prediction for Moretti 
+
+result.moretti <- results[which(results$Product == 'Moretti 66 Cl'),]
+
+ggplot(result.moretti, aes(x = Data)) +
+  geom_line(aes(y = Actual), color = "blue") +
+  geom_point(aes(y = Actual), color = "blue") +
+  geom_line(aes(y = Predicted), color = "orange") +
+  geom_point(aes(y = Predicted), color = "orange") +
+  geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI), alpha = 0.2, fill = "orange") +
+  scale_color_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
+  scale_fill_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
+  theme_minimal() +
+  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti") +
+  theme(legend.position = "bottom")
+
 
 
