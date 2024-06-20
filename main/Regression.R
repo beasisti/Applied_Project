@@ -19,6 +19,7 @@ data <- read.csv('./Datasets/top20_products.csv')
 data$Time <- ymd(data$Time)
 data$Year <- year(data$Time)
 data$Month <- month(data$Time)
+
 data <- data %>%
   mutate_at(vars(8:38), as.factor)
 
@@ -93,17 +94,21 @@ data <- data %>%
 data <- data %>%
   mutate_at(vars(21:22), as.factor)
 
+
 # add column for lag regression 
+
 data <- data %>%
-  arrange(Time) %>% # Assicurati che i dati siano ordinati per il tempo
+  arrange(Time) %>% 
   mutate(Vendite.in.Volume.Settimana.Precedente = lag(Vendite.in.Volume, default = 0))
 
 
 # add cluster column
+
 data.cluster <- read.csv('./Datasets/data_cluster.csv')
+data.cluster$cluster <- data.cluster$cluster - 1
 data <- merge(data, data.cluster[, c("Product", "cluster", "Time")], by = c("Product", "Time"), all.x = TRUE)
 data$cluster <- as.factor(data$cluster)
-# 2 is for leader, 1 for follower
+# 1 is for leader, 0 for follower
 
 
 # Correlation plot -------------------------------------------------------------------
@@ -120,7 +125,7 @@ rm(numeric_vars)
 # Take a look at data -------------------------------------------------------------------
 
 ggplot(data, aes(x = Vendite.in.Volume)) + 
-  geom_histogram(binwidth = 1000, fill = "grey", color = "skyblue") +
+  geom_histogram(binwidth = 1000, fill = "grey", color = "violet") +
   labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
 
 ggplot(data, aes(x = Vendite.in.Volume.Settimana.Precedente)) + 
@@ -186,6 +191,7 @@ model.5 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
               data = data) # 0.601
 summary(model.5) 
 
+
 model.6 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
@@ -209,11 +215,8 @@ plot(model.5)
 
 ad.test(residuals(model.5))
 
-# non molto bene
-
 # proviamo ad aggiungere una dummy sui volumi bassi, potrebbero essere quelli che
 # peggiorano il fit
-
 data$Volumi.bassi <- as.factor(ifelse(data$Vendite.in.Volume < 100, 1, 0))
 
 model.5.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
@@ -232,7 +235,6 @@ plot(model.5.1)
 
 # Regression without Outliers -------------------------------------------------------------------
 
-
 data.no.out <- data[data$Vendite.in.Volume >= 100, ]
 
 model.no.out <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
@@ -244,26 +246,6 @@ summary(model.no.out) # 0.5397
 
 par(mfrow = c(2,2))
 plot(model.no.out) # omoschedasticità direi ok 
-ad.test(residuals(model.no.out)) # male ma vabbè guardiamo il qqplot e basta
-
-
-# proviamo a togliere i leverage
-
-leverage_values <- hatvalues(model.no.out)
-high_leverage_points <- which(leverage_values > 0.02)
-
-data.clean <- data.no.out[-high_leverage_points, ]
-
-model.clean <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
-                     Sconto.Solo.Volantino + 
-                     Sconto.Solo.Display + # Sconto.Solo.Riduzione.Prezzo + 
-                     is_summer + cluster,
-                   data = data.no.out)
-summary(model.clean) # 0.5272
-
-par(mfrow = c(2,2))
-plot(model.clean) # ora ok
-ad.test(residuals(model.clean)) # male ma vabbè guardiamo il qqplot e basta
 
 
 # PLM Regression -------------------------------------------------------------------
@@ -275,21 +257,18 @@ model.5.2 <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                 data = data, 
                 index = c("Product"))
 summary(model.5.2) # 0.65443
-
+# cluster non lo prende in considerazione perchè è relativo a ogni Product 
 
 residuals <- residuals(model.5.2)
 fitted_values <- as.numeric(fitted(model.5.2))
 
-par(mfrow = c(2, 2))
+par(mfrow = c(1, 2))
 
 plot(fitted_values, residuals, main = "Residuals vs Fitted", xlab = "Fitted values", ylab = "Residuals")
 abline(h = 0, col = "red")
 
 qqnorm(residuals)
 qqline(residuals, col = "red", lwd = 2)
-
-plot(fitted_values, sqrt(abs(residuals)), main = "Scale-Location", xlab = "Fitted values", ylab = "Sqrt(|residuals|)")
-abline(h = 0, col = "red")
 
 
 # without outliers 
@@ -302,6 +281,17 @@ model.5.2.no.out <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.
                    index = c("Product"))
 summary(model.5.2.no.out) # 0.40383
 
+residuals <- residuals(model.5.2.no.out)
+fitted_values <- as.numeric(fitted(model.5.2.no.out))
+
+par(mfrow = c(1, 2))
+
+plot(fitted_values, residuals, main = "Residuals vs Fitted", xlab = "Fitted values", ylab = "Residuals")
+abline(h = 0, col = "red")
+
+qqnorm(residuals)
+qqline(residuals, col = "red", lwd = 2)
+
 
 # Lag regression -------------------------------------------------------------------
 
@@ -311,39 +301,77 @@ fit.0 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
               is_summer + cluster + Volumi.bassi + 
               Vendite.in.Volume.Settimana.Precedente.log, data = data)
 summary(fit.0)
+# non ha molto senso, ci viene un'interpolazione lineare
 
 
 # Prediction -------------------------------------------------------------------
 
+data <- data[order(data$Time), ]
 
-y <- as.numeric(fitted(model.5))
-res <- as.numeric(residuals(model.5))
-plot(y,res)
- 
+split_point <- floor(nrow(data) * 0.8)
+
+train_data <- data[1:split_point, ]
+test_data <- data[(split_point + 1):nrow(data), ]
+
+predictions <- predict(model.5.1, newdata = test_data)
+actual <- test_data$Vendite.in.Volume.log
+
+MAE <- mean(abs(predictions - actual)) # 0.721864 
+MSE <- mean((predictions - actual)^2) # 1.070857 
+
+cat("Mean Absolute Error (MAE):", MAE, "\n")
+cat("Mean Squared Error (MSE):", MSE, "\n")
+
+predictions <- predict(model.5.1, newdata = test_data, interval = "prediction")
+
+results <- data.frame(
+  Data = test_data$Time,
+  Product = test_data$Product,
+  Actual = test_data$Vendite.in.Volume.log,
+  Predicted = predictions[, 1],  
+  Lower_CI = predictions[, "lwr"],  
+  Upper_CI = predictions[, "upr"] 
+)
 
 
-# vanno sicuramente tolte delle osservazioni outlier / leverage
-leverage <- hatvalues(model.4)
-plot(leverage)
-data.1 <- data[leverage <= 0.015, ]
-# non riesco a fittare il modello model.4
+# prediction for Moretti 
+
+result.moretti <- results[which(results$Product == 'Moretti 66 Cl'),]
+
+ggplot(result.moretti, aes(x = Data)) +
+  geom_line(aes(y = Actual), color = "blue") +
+  geom_point(aes(y = Actual), color = "blue") +
+  geom_line(aes(y = Predicted), color = "orange") +
+  geom_point(aes(y = Predicted), color = "orange") +
+  geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI), alpha = 0.2, fill = "orange") +
+  scale_color_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
+  scale_fill_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
+  theme_minimal() +
+  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti") +
+  theme(legend.position = "bottom")
+
+# for the legend
+result.moretti_long <- result.moretti %>%
+  pivot_longer(cols = c("Actual", "Predicted"), names_to = "variable", values_to = "value")
+ggplot(result.moretti_long, aes(x = Data, y = value, color = variable)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti", color = "Legend") +
+  theme(legend.position = "right") +
+  scale_color_manual(values = c("Actual" = "blue", "Predicted" = "orange"))
 
 
-# Prediction
+# Coefficients -------------------------------------------------------------------
 
-predicted_vols <- predict(model.4, data)
-data$Predicted.Volumes.log <- predicted_vols
+model_summary <- tidy(model.5.1, conf.int = TRUE)
 
-data <- data %>%
-  mutate(Predicted.Volumes = exp(Predicted.Volumes.log))
-
-
-data.brand <- data[which(data$Brand == 'BECK S'),]
-ggplot(data.brand, aes(x = Time)) + 
-  geom_point(aes(y = Vendite.in.Volume, color = "Actual Volumes"), cex = .7) + 
-  geom_point(aes(y = Predicted.Volumes, color = "Predicted Volumes"), cex = .7) + 
-  labs(title = "Actual Volumes vs. Predicted", x = "Time", y = "Volumes") +
-  scale_color_manual(values = c("Actual Volumes" = "blue", "Predicted Volumes" = "red")) +
-  theme_minimal()
+ggplot(model_summary, aes(y = term, x = estimate)) +
+  geom_point(size = 1, col = 'red') +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, lwd = 0.7, col = 'red') +
+  theme_minimal() +
+  labs(title = "95% CI for Beta",
+       y = "Coefficient",
+       x = "")
 
 
