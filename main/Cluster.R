@@ -10,6 +10,7 @@ library(lme4)
 library(lubridate)
 library(tidyr)
 library(plm)
+library(dtwclust)
 
 
 # Data -------------------------------------------------------------------
@@ -66,6 +67,10 @@ plot(rbind(data_aggregated[, -1], centers),
 high_sales <- data_aggregated[data_aggregated$Totale_Vendite_in_Valore > 3e+07, ]
 text(high_sales[, -1], labels = high_sales$Product, pos = 2, cex = 0.8)
 
+# we have identified 2 clusters, that we can interpret as high sales and low sales, 
+# meaning that there exist two types of group in our products corresponding to those
+# who are leaders in the market and those who are followers
+
 
 # K-means on time series data -------------------------------------------------------------------
 
@@ -95,46 +100,77 @@ ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume, color = cluste
   labs(x = "Time", y = "Volume Sales", color = "Cluster") +
   theme_minimal()
 
+# qua risulta anche la Peroni tra i leader, probabilmente questo è dovuto al fatto che 
+# overall (quindi a livello di time series) risulta tra le leader di mercato, mentre
+# quando andiamo ad aggregare i dati ci sono delle osservazioni outlier (alcune settimane
+# le vendite sono di 0.66 L, un po' strano) che vanno ad influire sul cluster
 
-# Hierarchical clustering on aggregate data -------------------------------------------------------------------
 
-data_aggregated <- data %>%
-  group_by(Product) %>%
-  summarise(Totale_Vendite_in_Valore = sum(Vendite.in.Valore, na.rm = TRUE),
-            Totale_Vendite_in_Volume = sum(Vendite.in.Volume, na.rm = TRUE))
-n <- dim(data_aggregated)[1]
+# K-means on aggregate data per year -------------------------------------------------------------------
 
-distance <- 'euclidean' # manhattan, canberra
-linkages <- 'complete'
+data$Time <- ymd(data$Time)
+data$Year <- year(data$Time)
+data$Month <- month(data$Time)
 
-# distance matrix
-data.dist <- dist(data_aggregated[,-1], method=distance)
-
-data.a <- hclust(data.dist, method=linkages)
-plot(data.a, main=paste(distance, ' - ', linkages), hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-
-k <- 2
-rect.hclust(data.a, k=k)
-clusters <- cutree(data.a, k=k)
-table(clusters) 
-center <- matrix(0,k,2)
-for (i in 1:k) {
-  center[i,] <- colMeans(data_aggregated[clusters==i, -1])
+get_custom_year <- function(date) {
+  year <- year(date)
+  month <- month(date)
+  
+    if (month == 1 || (month == 2 && day(date) < 15)) {
+    return(year - 1)
+  } else {
+    return(year)
+  }
 }
-colnames(center) <- colnames(data_aggregated[,-1])
-center
 
-colors <- rep(0, times=n)
-for (i in 1:k){
-  colors[clusters==i] <- rainbow(k)[i]
+data$Custom_Year <- sapply(data$Time, get_custom_year)
+custom_years <- unique(data$Custom_Year)
+
+final_clusters <- data.frame(Product = unique(data$Product))
+
+for (custom_year in custom_years) {
+  data_year <- data %>%
+    filter(Custom_Year == custom_year) %>%
+    group_by(Product) %>%
+    summarise(Totale_Vendite_in_Valore = sum(Vendite.in.Valore, na.rm = TRUE),
+              Totale_Vendite_in_Volume = sum(Vendite.in.Volume, na.rm = TRUE))
+  
+  n <- dim(data_year)[1]
+  k <- 2
+  result.k <- kmeans(data_year[, -1], centers = k)
+  
+  data_year$cluster <- result.k$cluster
+  
+  cluster_totals <- data_year %>%
+    group_by(cluster) %>%
+    summarise(Totale_Vendite_in_Valore = sum(Totale_Vendite_in_Valore))
+  
+  cluster_with_highest_sales <- cluster_totals$cluster[which.max(cluster_totals$Totale_Vendite_in_Valore)]
+  data_year$cluster <- ifelse(data_year$cluster == cluster_with_highest_sales, 2, 1)
+  
+
+  col_name <- paste("cluster", custom_year, sep = ".")
+  cluster_data <- data_year %>% select(Product, cluster) %>% rename(!!col_name := cluster)
+  final_clusters <- merge(final_clusters, cluster_data, by = "Product", all = TRUE)
+  
+  centers <- as.data.frame(result.k$centers)
+  colors <- c("purple", "yellow")
+  
+  plot(rbind(data_year[, c(2:3)], centers), 
+       col = c(colors[data_year$cluster], rep('black', times = k)), 
+       pch = c(rep(19, times = n), rep(4, times = k)), 
+       cex = c(rep(1, times = n), rep(2, times = k)),
+       lwd = c(rep(1, times = n), rep(2, times = k)),
+       xlab = 'Total Value Sales', ylab = 'Total Volume Sales',
+       main = paste('Clustering per Anno:', custom_year), 
+       xlim = c(0, max(data_year$Totale_Vendite_in_Valore) + 1e06))
+  
+  cluster_2_products <- data_year[data_year$cluster == 1, ]
+  text(cluster_2_products[, -1], labels = cluster_2_products$Product, pos = 1, cex = 0.8)
 }
-plot(data_aggregated[,-1], col=colors, pch=19, main = paste(distance,'-', linkages))
-points(center[1,1], center[1,2], col=rainbow(k)[1], pch=4, lwd=3)  
-points(center[2,1], center[2,2], col=rainbow(k)[2] ,pch=4, lwd=3)
 
-# we have identified 2 clusters, that we can interpret as high sales and low sales, 
-# meaning that there exist two types of group in our products corresponding to those
-# who are leaders in the market and those who are followers
+# interessante, nella regressione però direi di usare il risultato sui dati aggregati
+# su tutti gli anni
 
 
 # Adding cluster to original data -------------------------------------------------------------------
