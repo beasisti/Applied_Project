@@ -20,6 +20,9 @@ library(MVN)
 # per giustificare quando facciamo LMM rispetto a Product e Brand (intercetta) e quando 
 # aggiugiamo anche la random slope rispetto a Prezzo_Sconto e Prezzo_NoSconto 
 
+# ANOVA per confrontare le verie tipologie di sconto su Vendite.in.Volume 
+
+
 data <- read.csv('./Datasets/top20_products.csv')
 
 data <- data %>%
@@ -294,4 +297,82 @@ image(S20, col=heat.colors(100),main='Cov. S20', asp=1, axes = FALSE,
                               S13,S14,S15,S16,S17,S18,S19,S20),
                         (0:100)/100, na.rm=TRUE))
 
+
+# One way ANOVA - Sconti --------------------------------------------------------
+
+sconto_cols <- c("Vendite.in.Valore.Solo.Special.Pack", 
+                 "Vendite.in.Valore.Solo.Volantino", 
+                 "Vendite.in.Valore.Solo.Display", 
+                 "Vendite.in.Valore.Solo.Riduzione.Prezzo", 
+                 "Vendite.in.Valore.Solo.Sconto.Loyalty")
+
+determine_tipo_sconto <- function(row) {
+  sconti <- names(row)[row == 1]
+  if (length(sconti) == 0) {
+    return("No_sconto") 
+  } else {
+    return(paste(sconti, collapse = ", "))
+  }
+}
+
+data <- data %>%
+  rowwise() %>%
+  mutate(Tipo_sconto = determine_tipo_sconto(across(all_of(sconto_cols))))
+
+# togliamo le osservazioni senza sconto
+no_sconto <- which(data$Tipo_sconto == 'No_sconto')
+data <- data[-no_sconto,]
+
+factor1 <- factor(data$Tipo_sconto) 
+x <- data$Vendite.in.Volume.log
+p <- dim(x)[2]
+
+treat <- levels(factor1)
+g <- length(treat)
+n <- dim(data)[1]         
+ng <- table(factor1)      
+
+i1=which(factor1==treat[1])
+i2=which(factor1==treat[2])
+i3=which(factor1==treat[3])
+i4=which(factor1==treat[4])
+i5=which(factor1==treat[5])
+i6=which(factor1==treat[6])
+i7=which(factor1==treat[7])
+i8=which(factor1==treat[8])
+i9=which(factor1==treat[9])
+i10=which(factor1==treat[10])
+i11=which(factor1==treat[11])
+i12=which(factor1==treat[12])
+i13=which(factor1==treat[13])
+i14=which(factor1==treat[14])
+
+boxplot(x~factor1, main=colnames(x), ylim=c(min(x),max(x)), col = rainbow(g))
+
+fit <- aov(x ~ factor1)
+summary(fit)
+# reject H0, there's difference
+
+
+# Assumptions test 3 ----------------------------------------------------------------------
+
+# 1) normality within each group
+pvalue <- NULL
+for (i in 1:g) {
+  pval <- shapiro.test(x[factor1==treat[i]])$p
+  pvalue <- c(pvalue, pval)
+}
+pvalue
+# ok solo in alcuni gruppi 
+
+# 2) homogeneity of variances
+valid_groups <- which(ng > 1)
+valid_indices <- which(factor1 %in% valid_groups)
+
+x <- data[as.numeric(factor(data$Tipo_sconto)) %in% valid_groups,]
+factor1 <- factor(x$Tipo_sconto)
+x <- x$Vendite.in.Volume.log
+bartlett.test(x, factor1)
+# non rispettata, mettiamo che le assunzioni non vengono rispettate come 
+# weaknesses dell'analisi
 

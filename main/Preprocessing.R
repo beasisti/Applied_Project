@@ -9,6 +9,7 @@ data <- data[which(data$Geography != "The maximum allowed number of stacked Repo
 str(data)
 colnames(data)
 
+
 # Data top 20 products --------------------------------------------------------
 
 # calcolo le vendite totali per ogni prodotto
@@ -30,7 +31,6 @@ time_series_top_20_df <- do.call(rbind, time_series_top_20)
 super <- time_series_top_20[[1]][which(time_series_top_20[[1]]$Geography == 'Supermercati (7012)'),]
 iper <- time_series_top_20[[1]][which(time_series_top_20[[1]]$Geography == 'Ipermercati (7011)'),]
 
-
 # prendo solo i dati degli ipermercati perchè quelli dei super arrivano fino al 2021
 time_series_ipermercati <- subset(time_series_top_20_df, Geography == "Ipermercati (7011)")
 # mancano delle settimane
@@ -42,9 +42,13 @@ print(birre_con_settimane_mancanti)
 
 settimane_complete <- unique(time_series_ipermercati$Time)
 birre_complete <- unique(time_series_ipermercati$Product)
+
 # tutte le combinazioni di birra e settimana
 tutte_combinazioni <- expand.grid(Product = birre_complete, Time = settimane_complete)
 dataset_completo <- merge(tutte_combinazioni, time_series_ipermercati, by = c("Product", "Time"), all.x = TRUE)
+ 
+
+# Missing Values -------------------------------------------------------------------
 
 dati_mancanti1 <- subset(dataset_completo, is.na(Vendite.in.Volume))
 # mancano i dati per la peroni nastro azzurro
@@ -79,7 +83,8 @@ dataset_senza_settimane_mancanti$Vendite.in.Volume.Senza.promozioni <- na.approx
 dataset_senza_settimane_mancanti$Vendite.in.Volume.Con.promozioni <- na.approx(dataset_senza_settimane_mancanti$Vendite.in.Volume.Con.promozioni)
 
 
-# Tolgo le variabili che non ci interessano
+# Selezione Variabili ---------------------------------------------------------
+
 colnames(dataset_senza_settimane_mancanti)
 dataset_official <- dataset_senza_settimane_mancanti
 
@@ -111,7 +116,8 @@ dataset_official[, sconto_columns] <- lapply(dataset_official[, sconto_columns],
 dataset_official <- dataset_official[, c(1:43, 75)]
 dataset_official$Geography <- NULL
 dataset_official$FR_CATEGORY_Name....CATEGORIA_TSVM1.. <- NULL
-  
+
+
 # Salvo file 
 # write.csv(dataset_official, "./Datasets/top20_products.csv", row.names = FALSE)
 
