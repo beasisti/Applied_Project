@@ -589,4 +589,9 @@ ggplot(result.moretti, aes(x = Data)) +
   theme(legend.position = "bottom")
 
 
+# Final comparison between LMM Product, LMM Brand & LM -------------------------------
 
+anova(fm1mer.2, fm2mer.2)
+# fm1mer.2 in better
+
+AIC(model.5.1)
