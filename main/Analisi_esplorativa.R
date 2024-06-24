@@ -5,7 +5,8 @@ library(lubridate)
 library(MASS)
 
 
-data <- read.csv('./Datasets/top20_products.csv')
+data <- read.csv('top20_products.csv')
+
 data$Time <- ymd(data$Time)
 data$Year <- year(data$Time)
 data$Month <- month(data$Time)
@@ -76,6 +77,45 @@ ggplot(sales, aes(x = Time, y = Vendite.in.Volume, color = Product)) + # possiam
        y = "Vendite Totali") +
   theme_minimal()
 
+
+ggplot(sales, aes(x = Time, y = Vendite.in.Volume, color = Product)) + 
+  geom_point(size = 0.2) +
+  geom_line(linewidth = 0.75) +
+  labs(
+    title = "Sales with Promotions Over Time",
+    x = "Week",
+    y = "Total Sales"
+  ) +
+  theme_minimal() +  
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12),     
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12)   
+  )
+
+ggplot(sales, aes(x = Time, y = Vendite.in.Volume, color = Product)) + 
+  geom_point(size = 0.2) +
+  geom_line(linewidth = 0.75) +
+  labs(
+    title = "Sales with Promotions Over Time by Vendor",
+    x = "Week",
+    y = "Total Sales"
+  ) +
+  facet_grid(Vendor ~ .) +  # Raggruppa i grafici per Vendor in colonne
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12)
+  )
+
+
 filtered_data <- sales %>%
   group_by(Product) %>%
   mutate(has_high_sales = any(Vendite.in.Volume > 100000)) %>%
@@ -96,41 +136,77 @@ min <- data %>%
 
 # Time series plots  -------------------------------------------------------------------
 
-ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni, color = Product)) + # possiamo colorare in base a Brand / Vendor
+ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni, color = Product)) + 
   geom_point(size = 0.2) +
   geom_line(linewidth = 0.75) +
-  labs(title = "Vendite con Promozioni nel Tempo",
-       x = "Settimana",
-       y = "Vendite Totali") +
-  theme_minimal()+
-  theme(legend.position = "none")
+  labs(
+    title = "Sales with Promotions Over Time",
+    x = "Week",
+    y = "Total Sales"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12),     
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12)   
+  )
 
 ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Product)) +
   geom_point(size = 0.2) +
   geom_line(linewidth = 0.75) +
-  labs(title = "Vendite senza Promozioni nel Tempo",
-       x = "Settimana",
-       y = "Vendite") +
-  theme_minimal()+
-  theme(legend.position = "none")
+  labs(
+    title = "Sales without Promotions Over Time",
+    x = "Week",
+    y = "Sales"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12),     
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12)    
+  )
 
 ggplot(data, aes(x = Time, y = Vendite.in.Volume, color = Product)) +
   geom_point(size = 0.2) +
   geom_line(linewidth = 0.75) +
-  labs(title = "Vendite di Birra nel Tempo",
-       x = "Settimana",
-       y = "Vendite Totali") +
-  theme_minimal()+
-  theme(legend.position = "none")
+  labs(
+    title = "Beer Sales Over Time",
+    x = "Week",
+    y = "Total Sales"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12),     
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12)   
+  )
 
 ggplot(data, aes(x = Time, y = Sconto, color = Product)) +
   geom_point(size = 0.2) +
   geom_line(linewidth = 0.75) +
-  labs(title = "Sconti nel Tempo",
-       x = "Settimana",
-       y = "% Sconto") +
-  theme_minimal()+
-  theme(legend.position = "none")
+  labs(
+    title = "Discounts Over Time",
+    x = "Week",
+    y = "% Discount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12),     
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12)   
+  )
 
 
 filtered_data1 <- data %>%
@@ -152,60 +228,150 @@ ggplot(filtered_data1, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, gro
 
 ggplot(data, aes(x = factor(Month), y = Vendite.in.Volume)) +
   geom_boxplot(fill = "skyblue", color = "black") +
-  labs(title = "Distribuzione delle Vendite Mensili",
-       x = "Mese",
-       y = "Vendite in Volume") +
+  labs(
+    title = "Monthly Sales Distribution",
+    x = "Month",
+    y = "Sales Volume"
+  ) +
   theme_minimal() +
-  scale_x_discrete(labels = month.abb)
+  scale_x_discrete(labels = month.abb) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
 
 ggplot(data, aes(x = factor(Month), y = Vendite.in.Volume.Senza.promozioni)) +
   geom_boxplot(fill = "skyblue", color = "black") +
-  labs(title = "Distribuzione delle Vendite Mensili",
-       x = "Mese",
-       y = "Vendite in Volume") +
+  labs(
+    title = "Monthly Sales Distribution Without Promotions",
+    x = "Month",
+    y = "Sales Volume"
+  ) +
   theme_minimal() +
-  scale_x_discrete(labels = month.abb)
+  scale_x_discrete(labels = month.abb) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
 
 ggplot(data, aes(x = factor(Month), y = Vendite.in.Volume.Con.promozioni)) +
   geom_boxplot(fill = "skyblue", color = "black") +
-  labs(title = "Distribuzione delle Vendite Mensili",
-       x = "Mese",
-       y = "Vendite in Volume") +
+  labs(
+    title = "Monthly Sales Distribution With Promotions",
+    x = "Month",
+    y = "Sales Volume"
+  ) +
   theme_minimal() +
-  scale_x_discrete(labels = month.abb)
+  scale_x_discrete(labels = month.abb) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
 
 ggplot(data, aes(x = factor(Month), y = Sconto)) +
   geom_boxplot(fill = "skyblue", color = "black") +
-  labs(title = "Distribuzione degli Sconti Mensili",
-       x = "Mese",
-       y = "Sconto (%)") +
+  labs(
+    title = "Monthly Discount Distribution",
+    x = "Month",
+    y = "Discount (%)"
+  ) +
   theme_minimal() +
   scale_x_discrete(labels = month.abb)
 
-
-# Histogram  -------------------------------------------------------------------
-
+# Istogramma delle vendite
 ggplot(data, aes(x = Vendite.in.Valore)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
-  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+  labs(
+    title = "Sales Distribution",
+    x = "Sales Value",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12)
+  )
 
 ggplot(data, aes(x = Vendite.in.Valore.Senza.promozioni)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
-  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+  labs(
+    title = "Sales Distribution Without Promotions",
+    x = "Sales Value",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12)
+  )
 
 ggplot(data, aes(x = Vendite.in.Valore.Con.promozioni)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
-  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+  labs(
+    title = "Sales Distribution With Promotions",
+    x = "Sales Value",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12)
+  )
 
 ggplot(data, aes(x = Vendite.in.Volume)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
-  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+  labs(
+    title = "Sales Distribution",
+    x = "Sales Volume",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12)
+  )
 
 ggplot(data, aes(x = Vendite.in.Volume.Senza.promozioni)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
-  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+  labs(
+    title = "Sales Distribution Without Promotions",
+    x = "Sales Volume",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12)
+  )
 
 ggplot(data, aes(x = Vendite.in.Volume.Con.promozioni)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
-  labs(title = "Distribuzione delle Vendite", x = "Vendite in Valore", y = "Frequenza")
+  labs(
+    title = "Sales Distribution With Promotions",
+    x = "Sales Volume",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12)
+  )
 
