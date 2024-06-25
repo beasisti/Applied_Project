@@ -76,7 +76,7 @@ for (i in 1:g){
   Ps <- c(Ps, mvn(x[factor1 == levels(factor1)[i],])$multivariateNormality)
 }
 Ps
-# non è rispettata
+# non è rispettata in tutti i gruppi
 
 # 2) same covariance structure (= same covariance matrix Sigma)
 S <- cov(x)
@@ -211,8 +211,6 @@ S17 <- cov(x[i17,])
 S18 <- cov(x[i18,])
 S19 <- cov(x[i19,])
 S20 <- cov(x[i20,])
-
-
 
 x11()
 par(mfrow=c(4,5))

@@ -11,6 +11,7 @@ library(lubridate)
 library(tidyr)
 library(plm)
 library(merTools)
+library(nortest)
 
 
 # Creating Dataset for Regression -------------------------------------------------------------------
@@ -116,7 +117,7 @@ data$cluster <- as.factor(data$cluster)
 
 numeric_vars <- data[, -c(17,18)] %>% select_if(is.numeric)
 cor_matrix <- cor(numeric_vars, use = "complete.obs")
-corrplot(cor_matrix, method = 'color', type = 'full', 
+corrplot::corrplot(cor_matrix, method = 'color', type = 'full', 
          tl.col = "black", tl.cex = 0.8,
          title = "Matrice di Correlazione", mar = c(0, 0, 1, 0))
 
@@ -349,8 +350,7 @@ ggplot(result.moretti, aes(x = Data)) +
   scale_color_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
   scale_fill_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
   theme_minimal() +
-  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti") +
-  theme(legend.position = "bottom")
+  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti") 
 
 # for the legend
 result.moretti_long <- result.moretti %>%
@@ -379,7 +379,7 @@ ggplot(model_summary, aes(y = term, x = estimate)) +
 
 # LMM Product -----------------------------------------------------------------------------
 
-boxplot(residuals(model.5.1) ~ data$Product)
+boxplot(residuals(model.5.1) ~ data$Product, col = 'lightgreen')
 
 fm1mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
@@ -448,6 +448,10 @@ qqline(unlist(ranef(fm1mer.2)$Product), col='red', lwd=2)
 
 
 # Prediction on test set
+data <- data[order(data$Time), ]
+split_point <- floor(nrow(data) * 0.8)
+train_data <- data[1:split_point, ]
+test_data <- data[(split_point + 1):nrow(data), ]
 predictions <- predict(fm1mer.2, newdata = test_data)
 actual <- test_data$Vendite.in.Volume.log
 
@@ -479,13 +483,13 @@ ggplot(result.moretti, aes(x = Data)) +
   scale_color_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
   scale_fill_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
   theme_minimal() +
-  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti") +
+  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti - LMM Product") +
   theme(legend.position = "bottom")
 
 
 # LMM Brand -----------------------------------------------------------------------------
 
-boxplot(residuals(model.5.1) ~ data$Brand)
+boxplot(residuals(model.5.1) ~ data$Brand, col = 'lightgreen')
 
 fm2mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
@@ -585,7 +589,7 @@ ggplot(result.moretti, aes(x = Data)) +
   scale_color_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
   scale_fill_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
   theme_minimal() +
-  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti") +
+  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti - LMM Brand") +
   theme(legend.position = "bottom")
 
 
@@ -594,4 +598,4 @@ ggplot(result.moretti, aes(x = Data)) +
 anova(fm1mer.2, fm2mer.2)
 # fm1mer.2 in better
 
-AIC(model.5.1)
+AIC(model.5.1) 

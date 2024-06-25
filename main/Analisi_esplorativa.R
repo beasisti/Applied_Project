@@ -284,7 +284,9 @@ ggplot(data, aes(x = factor(Month), y = Sconto)) +
   theme_minimal() +
   scale_x_discrete(labels = month.abb)
 
-# Istogramma delle vendite
+
+# Histrogram ---------------------------------------------------------------------
+
 ggplot(data, aes(x = Vendite.in.Valore)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
   labs(
@@ -331,7 +333,7 @@ ggplot(data, aes(x = Vendite.in.Valore.Con.promozioni)) +
   )
 
 ggplot(data, aes(x = Vendite.in.Volume)) + 
-  geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
+  geom_histogram(binwidth = 5000, fill = "skyblue", color = "darkgrey") +
   labs(
     title = "Sales Distribution",
     x = "Sales Volume",
@@ -375,3 +377,17 @@ ggplot(data, aes(x = Vendite.in.Volume.Con.promozioni)) +
     axis.text = element_text(size = 12)
   )
 
+ggplot(data, aes(x = Vendite.in.Volume)) + 
+  geom_histogram(binwidth = 5000, fill = "skyblue", color = "darkgrey") +
+  labs(
+    title = "Sales Distribution",
+    x = "Sales Volume",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12)
+  )

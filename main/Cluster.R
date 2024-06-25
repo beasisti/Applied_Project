@@ -58,6 +58,7 @@ result.k$cluster
 result.k$centers 
 centers <- as.data.frame(result.k$centers)
 
+x11()
 plot(rbind(data_aggregated[, -1], centers), 
      col = c(result.k$cluster+5, rep('black', times = k)), 
      pch = c(rep(19, times=n), rep(4, times=k)), 
@@ -81,7 +82,7 @@ data_ts <- data %>%
 
 data_ts <- data_ts[complete.cases(data_ts), ]
 
-set.seed(1)
+set.seed(123)
 dba_cluster <- tsclust(data_ts[,-1], type = "partitional", k = 2, distance = "Euclidean")
 cluster_labels <- dba_cluster@cluster
 
@@ -128,6 +129,7 @@ custom_years <- unique(data$Custom_Year)
 
 final_clusters <- data.frame(Product = unique(data$Product))
 
+# par(mfrow = c(2, 3))
 for (custom_year in custom_years) {
   data_year <- data %>%
     filter(Custom_Year == custom_year) %>%
@@ -148,13 +150,13 @@ for (custom_year in custom_years) {
   cluster_with_highest_sales <- cluster_totals$cluster[which.max(cluster_totals$Totale_Vendite_in_Valore)]
   data_year$cluster <- ifelse(data_year$cluster == cluster_with_highest_sales, 2, 1)
   
-
   col_name <- paste("cluster", custom_year, sep = ".")
-  cluster_data <- data_year %>% select(Product, cluster) %>% rename(!!col_name := cluster)
+  cluster_data <- data_year %>% dplyr::select(Product, cluster) %>% rename(!!col_name := cluster)
   final_clusters <- merge(final_clusters, cluster_data, by = "Product", all = TRUE)
   
   centers <- as.data.frame(result.k$centers)
   colors <- c("purple", "yellow")
+  
   
   plot(rbind(data_year[, c(2:3)], centers), 
        col = c(colors[data_year$cluster], rep('black', times = k)), 
@@ -163,7 +165,7 @@ for (custom_year in custom_years) {
        lwd = c(rep(1, times = n), rep(2, times = k)),
        xlab = 'Total Value Sales', ylab = 'Total Volume Sales',
        main = paste('Clustering per Anno:', custom_year), 
-       xlim = c(0, max(data_year$Totale_Vendite_in_Valore) + 1e06))
+       xlim = c(0, max(data_year$Totale_Vendite_in_Valore) + 2e06))
   
   cluster_2_products <- data_year[data_year$cluster == 1, ]
   text(cluster_2_products[, -1], labels = cluster_2_products$Product, pos = 1, cex = 0.8)
