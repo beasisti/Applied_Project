@@ -38,12 +38,18 @@ data <- data %>%
 
 # Analisi esplorativa  -------------------------------------------------------------------
 
-# summary delle variabili numeriche
-summary(data[,c(5,6,7,39,40,41,42)])
+dati <- data[, c(5,6,7,39,40,41,42)]
 
+colnames(dati) <- c("SalesValue", "SalesValueWithoutPromotions", "SalesValueWithPromotions",
+                    "SalesVolume", "SalesVolumeWithPromotions", "SalesVolumeWithoutPromotions",
+                    "Discount")
+
+# summary delle variabili numeriche
+summary(dati)
 
 max.vendite <- data %>% # corrisponde a max.promo
   filter(Vendite.in.Volume == max(Vendite.in.Volume))
+max.vendite
 max.vendite$Sconto # 24%
 
 max.no.promo <- data %>%
@@ -61,7 +67,11 @@ max.sconto <- data %>%
 
 min.vendite <- data %>% # corrisponde al min per tutte le altre covariate
   filter(Vendite.in.Volume == min(Vendite.in.Volume))
+
+min.vendite
+
 min.vendite$Sconto # 0 sconto
+
 time.min <- min.vendite %>%
   arrange(Time)
 time.min <- unique(time.min$Time)
@@ -162,6 +172,44 @@ ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Produ
     x = "Week",
     y = "Sales"
   ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12),     
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12)    
+  )
+
+ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni, color = Product)) + 
+  geom_point(size = 0.2) +
+  geom_line(linewidth = 0.75) +
+  labs(
+    title = "Sales with Promotions Over Time",
+    x = "Week",
+    y = "Total Sales"
+  ) +
+  facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 12),     
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12)   
+  )
+
+ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Product)) +
+  geom_point(size = 0.2) +
+  geom_line(linewidth = 0.75) +
+  labs(
+    title = "Sales without Promotions Over Time",
+    x = "Week",
+    y = "Sales"
+  ) +
+  facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") + 
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
@@ -391,3 +439,4 @@ ggplot(data, aes(x = Vendite.in.Volume)) +
     axis.title.y = element_text(size = 14),  
     axis.text = element_text(size = 12)
   )
+
