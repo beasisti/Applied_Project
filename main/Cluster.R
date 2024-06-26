@@ -43,6 +43,10 @@ data <- data %>%
                           "DREHER BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800689011133" = "Dreher 33 Cl",
                           "MORETTI BIRRA LAGER REGOLARE 4.6 % LATTINA 66 CL 2 CT - 800143544001" = "Moretti 33 Cl x 2 (lattina)"))
 
+data <- data %>%
+  mutate(Vendite.in.Volume.log = log(Vendite.in.Volume),
+         Vendite.in.Valore.log = log(Vendite.in.Valore))
+
 
 # K-means on aggregate data -------------------------------------------------------------------
 
@@ -93,9 +97,28 @@ beer_data_transposed <- data_ts %>%
   mutate(Date = as.Date(Date))
 
 beer_data_transposed <- beer_data_transposed %>%
-  arrange(Product, Date)
+  arrange(Product, Date) %>%
+  group_by(Product) %>%
+  mutate(Vendite.in.Volume.log = log(Vendite.in.Volume)) %>%
+  ungroup()
 
 ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume, color = cluster, group = Product)) +
+  geom_line() +
+  scale_color_manual(values = c('1' = '#FF00FF', '2' = '#FFFF00')) +
+  labs(x = "Time", y = "Volume Sales", color = "Cluster") +
+  theme_minimal()
+
+# coloriamo la Peroni 66 Cl
+beer_data_transposed <- beer_data_transposed %>%
+  mutate(color = ifelse(Product == "Peroni 66 Cl", "red", as.character(cluster)))
+ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume, color = color, group = Product)) +
+  geom_line() +
+  scale_color_manual(values = c('1' = '#FF00FF', '2' = '#FFFF00', 'red' = 'red')) +
+  labs(x = "Time", y = "Volume Sales", color = "Cluster") +
+  theme_minimal()
+
+# log scale
+ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume.log, color = cluster, group = Product)) +
   geom_line() +
   scale_color_manual(values = c('1' = '#FF00FF', '2' = '#FFFF00')) +
   labs(x = "Time", y = "Volume Sales", color = "Cluster") +
@@ -130,6 +153,8 @@ custom_years <- unique(data$Custom_Year)
 final_clusters <- data.frame(Product = unique(data$Product))
 
 # par(mfrow = c(2, 3))
+year_counter <- 1  # Initialize the counter
+
 for (custom_year in custom_years) {
   data_year <- data %>%
     filter(Custom_Year == custom_year) %>%
@@ -157,18 +182,19 @@ for (custom_year in custom_years) {
   centers <- as.data.frame(result.k$centers)
   colors <- c("purple", "yellow")
   
-  
   plot(rbind(data_year[, c(2:3)], centers), 
        col = c(colors[data_year$cluster], rep('black', times = k)), 
        pch = c(rep(19, times = n), rep(4, times = k)), 
        cex = c(rep(1, times = n), rep(2, times = k)),
        lwd = c(rep(1, times = n), rep(2, times = k)),
        xlab = 'Total Value Sales', ylab = 'Total Volume Sales',
-       main = paste('Clustering per Anno:', custom_year), 
+       main = paste('Clustering of Year', year_counter), # or custom_year, depending on what we want 
        xlim = c(0, max(data_year$Totale_Vendite_in_Valore) + 2e06))
   
   cluster_2_products <- data_year[data_year$cluster == 1, ]
   text(cluster_2_products[, -1], labels = cluster_2_products$Product, pos = 1, cex = 0.8)
+  
+  year_counter <- year_counter + 1  
 }
 
 # interessante, nella regressione però direi di usare il risultato sui dati aggregati

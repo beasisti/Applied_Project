@@ -5,7 +5,7 @@ library(lubridate)
 library(MASS)
 
 
-data <- read.csv('top20_products.csv')
+data <- read.csv('./Datasets/top20_products.csv')
 
 data$Time <- ymd(data$Time)
 data$Year <- year(data$Time)
@@ -33,6 +33,10 @@ data <- data %>%
                           "CORONA BIRRA LAGER REGOLARE 4.6 % BOTTIGLIA DI VETRO 35.5 CL 1 CT - 750000103281" = "Corona 35.5 Cl",
                           "DREHER BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800689011133" = "Dreher 33 Cl",
                           "MORETTI BIRRA LAGER REGOLARE 4.6 % LATTINA 66 CL 2 CT - 800143544001" = "Moretti 33 Cl x 2 (lattina)"))
+
+data <- data %>%
+  mutate(Brand = recode(Brand, "BIRRIFICIO ANGELO PORETTI 3 LUPPOLI" = "PORETTI"))
+
 data <- data %>%
   mutate_at(vars(8:38), as.factor)
 
@@ -114,7 +118,7 @@ ggplot(sales, aes(x = Time, y = Vendite.in.Volume, color = Product)) +
     x = "Week",
     y = "Total Sales"
   ) +
-  facet_grid(Vendor ~ .) +  # Raggruppa i grafici per Vendor in colonne
+  facet_grid(Vendor ~ .) +  
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
@@ -331,6 +335,39 @@ ggplot(data, aes(x = factor(Month), y = Sconto)) +
   ) +
   theme_minimal() +
   scale_x_discrete(labels = month.abb)
+
+ggplot(data, aes(x = factor(Product), y = Vendite.in.Volume)) +
+  geom_boxplot(fill = "skyblue", color = "black", outlier.size = 0.5) +
+  labs(
+    title = "Sales Distribution for Product",
+    x = "Product",
+    y = "Sales Volume"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 12)
+  )
+
+
+ggplot(data, aes(x = factor(Brand), y = Vendite.in.Volume)) +
+  geom_boxplot(fill = "skyblue", color = "black", outlier.size = 0.5) +
+  labs(
+    title = "Sales Distribution for Brand",
+    x = "Brand",
+    y = "Sales Volume"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 12)
+  )
 
 
 # Histrogram ---------------------------------------------------------------------

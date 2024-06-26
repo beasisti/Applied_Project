@@ -12,6 +12,7 @@ library(tidyr)
 library(plm)
 library(merTools)
 library(nortest)
+library(broom.mixed)
 
 
 # Creating Dataset for Regression -------------------------------------------------------------------
@@ -116,10 +117,10 @@ data$cluster <- as.factor(data$cluster)
 # Correlation plot -------------------------------------------------------------------
 
 numeric_vars <- data[, -c(17,18)] %>% select_if(is.numeric)
-cor_matrix <- cor(numeric_vars, use = "complete.obs")
-corrplot::corrplot(cor_matrix, method = 'color', type = 'full', 
-         tl.col = "black", tl.cex = 0.8,
-         title = "Matrice di Correlazione", mar = c(0, 0, 1, 0))
+cor_matrix <- cor(numeric_vars[,-10], use = "complete.obs")
+corrplot::corrplot(cor_matrix, method = 'circle', type = 'full', 
+         tl.col = "black", tl.cex = 0.8,   outline = TRUE,   addgrid.col = NA,
+         title = "Correlation Matrix", mar = c(0, 0, 1, 0))
 
 rm(numeric_vars)
 
@@ -141,7 +142,10 @@ hist(data$Prezzo_NoSconto, prob = T, xlab = 'Prezzo senza Sconto')
 # apply the log 
 data <- data %>%
   mutate(Vendite.in.Volume.log = log(Vendite.in.Volume),
-         Prezzo_Sconto.log = log(Prezzo_Sconto))
+         Prezzo_Sconto.log = log(Prezzo_Sconto),
+         Prezzo_NoSconto.log = log(Prezzo_NoSconto))
+
+data$Differenza_Prezzo <- data$Prezzo_NoSconto - data$Prezzo_Sconto
 
 data <- data %>%
   mutate(Vendite.in.Volume.Settimana.Precedente.log = ifelse(Vendite.in.Volume.Settimana.Precedente != 0,
@@ -151,61 +155,61 @@ data <- data %>%
 
 # Linear regression for Volume Sales -------------------------------------------------------------------
 
-model.0 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.0 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Special.Pack + Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 Sconto.Solo.Loyalty + is_holiday + is_summer + Month + Year + cluster,
               data = data)
-summary(model.0) # 0.6138 
+summary(model.0) # 0.6026 
 # the model is significative, with a good R2
 
-model.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 Sconto.Solo.Loyalty + is_holiday + is_summer + Month + Year + cluster,
               data = data)
-summary(model.1) # 0.6128
+summary(model.1) # 0.6016
 
-model.2 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.2 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 is_holiday + is_summer + Month + Year + cluster,
               data = data)
-summary(model.2) # 0.6116
+summary(model.2) # 0.6004
 
-model.3 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.3 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 is_holiday + is_summer + Year + cluster,
               data = data)
-summary(model.3) # 0.6104
+summary(model.3) # 0.5992
 
-model.4 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.4 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 is_summer + Year + cluster,
               data = data)
-summary(model.4) # 0.6083
+summary(model.4) # 0.5972
 
-model.5 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.5 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 is_summer + cluster,
-              data = data) # 0.601
+              data = data) # 0.5887
 summary(model.5) 
 
 
-model.6 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.6 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 cluster,
-              data = data) # 0.585
+              data = data) # 0.5727
 summary(model.6) 
 
-model.7 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.7 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 cluster,
-              data = data) # 0.5664
+              data = data) # 0.5546
 summary(model.7) 
 
 # select model.5 (it seems the most complete to me)
@@ -222,30 +226,28 @@ ad.test(residuals(model.5))
 # peggiorano il fit
 data$Volumi.bassi <- as.factor(ifelse(data$Vendite.in.Volume < 100, 1, 0))
 
-model.5.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.5.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 is_summer + cluster + Volumi.bassi,
-              data = data) # 0.6609
+              data = data) # 0.6505
 summary(model.5.1) 
 
 par(mfrow = c(2,2))
 plot(model.5.1)
 # il fit non è comunque bello ma R2 si è alzato
 
-# proviamo a togliere queste osservazioni
-
 
 # Regression without Outliers -------------------------------------------------------------------
 
 data.no.out <- data[data$Vendite.in.Volume >= 100, ]
 
-model.no.out <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.no.out <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 is_summer + cluster,
               data = data.no.out)
-summary(model.no.out) # 0.5397
+summary(model.no.out) # 0.5249
 
 par(mfrow = c(2,2))
 plot(model.no.out) # omoschedasticità direi ok 
@@ -253,13 +255,13 @@ plot(model.no.out) # omoschedasticità direi ok
 
 # PLM Regression -------------------------------------------------------------------
 
-model.5.2 <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.5.2 <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                 Sconto.Solo.Volantino + 
                 Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                 is_summer + cluster + Volumi.bassi, 
                 data = data, 
                 index = c("Product"))
-summary(model.5.2) # 0.65443
+summary(model.5.2) # 0.65429
 # cluster non lo prende in considerazione perchè è relativo a ogni Product 
 
 residuals <- residuals(model.5.2)
@@ -276,13 +278,13 @@ qqline(residuals, col = "red", lwd = 2)
 
 # without outliers 
 
-model.5.2.no.out <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+model.5.2.no.out <- plm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                    Sconto.Solo.Volantino + 
                    Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                    is_summer + cluster,  
                    data = data.no.out, 
                    index = c("Product"))
-summary(model.5.2.no.out) # 0.40383
+summary(model.5.2.no.out) # 0.40356
 
 residuals <- residuals(model.5.2.no.out)
 fitted_values <- as.numeric(fitted(model.5.2.no.out))
@@ -298,7 +300,7 @@ qqline(residuals, col = "red", lwd = 2)
 
 # Lag regression -------------------------------------------------------------------
 
-fit.0 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+fit.0 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
               Sconto.Solo.Volantino + 
               Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
               is_summer + cluster + Volumi.bassi + 
@@ -319,11 +321,8 @@ test_data <- data[(split_point + 1):nrow(data), ]
 predictions <- predict(model.5.1, newdata = test_data)
 actual <- test_data$Vendite.in.Volume.log
 
-MAE <- mean(abs(predictions - actual)) # 0.721864 
-MSE <- mean((predictions - actual)^2) # 1.070857 
-
-cat("Mean Absolute Error (MAE):", MAE, "\n")
-cat("Mean Squared Error (MSE):", MSE, "\n")
+MAE <- mean(abs(predictions - actual)) # 0.7169153 
+MSE <- mean((predictions - actual)^2) # 1.041169 
 
 predictions <- predict(model.5.1, newdata = test_data, interval = "prediction")
 
@@ -338,7 +337,6 @@ results <- data.frame(
 
 
 # prediction for Moretti 
-
 result.moretti <- results[which(results$Product == 'Moretti 66 Cl'),]
 
 ggplot(result.moretti, aes(x = Data)) +
@@ -366,7 +364,8 @@ ggplot(result.moretti_long, aes(x = Data, y = value, color = variable)) +
 
 # Coefficients -------------------------------------------------------------------
 
-model_summary <- tidy(model.5.1, conf.int = TRUE)
+model_summary <- tidy(model.5.1, conf.int = TRUE) %>%
+  filter(term != "(Intercept)")
 
 ggplot(model_summary, aes(y = term, x = estimate)) +
   geom_point(size = 1, col = 'red') +
@@ -374,14 +373,43 @@ ggplot(model_summary, aes(y = term, x = estimate)) +
   theme_minimal() +
   labs(title = "95% CI for Beta",
        y = "Coefficient",
-       x = "")
+       x = "") + 
+  xlim(c(-6,4))
+
+
+# Model with Difference of Prices --------------------------------------------------------
+
+model.5.3 <- lm(Vendite.in.Volume.log ~ Differenza_Prezzo +
+                  Sconto.Solo.Volantino + 
+                  Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
+                  is_summer + cluster + Volumi.bassi,
+                data = data) # 0.5735
+summary(model.5.3) 
+
+par(mfrow = c(2,2))
+plot(model.5.3)
+
+model_summary <- tidy(model.5.3, conf.int = TRUE) %>%
+  filter(term != "(Intercept)")
+
+ggplot(model_summary, aes(y = term, x = estimate)) +
+  geom_point(size = 1, col = 'red') +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, lwd = 0.7, col = 'red') +
+  theme_minimal() +
+  labs(title = "95% CI for Beta",
+       y = "Coefficient",
+       x = "") + 
+  xlim(c(-6,4))
+
+# forse è un po' più interpretabile, diciamo che quando la differenza di prezzo è alta
+# le vendite sono più alte, tuttavia il modello con i prezzi separati fitta meglio
 
 
 # LMM Product -----------------------------------------------------------------------------
 
 boxplot(residuals(model.5.1) ~ data$Product, col = 'lightgreen')
 
-fm1mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+fm1mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
                  Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                  is_summer + cluster + Volumi.bassi + (1|Product),
@@ -392,13 +420,13 @@ sigma2_eps # var of error
 sigma2_b <- as.numeric(get_variance_random(fm1mer.0))
 sigma2_b # var of random intercept
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
-PVRE # 0.6851717
+PVRE # 0.6749161
 
 # visualization of the random intercepts with their 95% confidence intervals
 dotplot(ranef(fm1mer.0, condVar=T))
 
 
-fm1mer.1 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+fm1mer.1 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
                  Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                  is_summer + cluster + Volumi.bassi + (1 + Prezzo_Sconto.log|Product),
@@ -409,19 +437,19 @@ sigma2_eps # var of error
 sigma2_b <- as.numeric(get_variance_random(fm1mer.1))
 sigma2_b # var of random intercept
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
-PVRE # 0.8935421
+PVRE # 0.8924678
 
 # visualization of the random intercepts with their 95% confidence intervals
 dotplot(ranef(fm1mer.1, condVar=T))
 
-anova(fm1mer.0, fm1mer.1) 
+anova(fm1mer.0, fm1mer.1)  # -> fm1mer.1
 
 
-fm1mer.2 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+fm1mer.2 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                    Sconto.Solo.Volantino + 
                    Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                    is_summer + cluster + Volumi.bassi + 
-                   (1 + Prezzo_Sconto.log + Prezzo_NoSconto|Product),
+                   (1 + Prezzo_Sconto.log + Prezzo_NoSconto.log|Product),
                  data = data)
 
 sigma2_eps <- as.numeric(get_variance_residual(fm1mer.2))
@@ -429,12 +457,12 @@ sigma2_eps # var of error
 sigma2_b <- as.numeric(get_variance_random(fm1mer.2))
 sigma2_b # var of random intercept
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
-PVRE # 0.9197901
+PVRE # 0.9196346
 
 # visualization of the random intercepts with their 95% confidence intervals
 dotplot(ranef(fm1mer.2, condVar=T))
 
-anova(fm1mer.1, fm1mer.2)
+anova(fm1mer.1, fm1mer.2) # -> fm1mer.2
 
 # Diagnostic
 # 1) Assessing Assumption on the within-group errors
@@ -455,8 +483,8 @@ test_data <- data[(split_point + 1):nrow(data), ]
 predictions <- predict(fm1mer.2, newdata = test_data)
 actual <- test_data$Vendite.in.Volume.log
 
-MAE <- mean(abs(predictions - actual)) # 0.4654202 
-MSE <- mean((predictions - actual)^2) # 0.5529891 
+MAE <- mean(abs(predictions - actual)) # 0.4663137 
+MSE <- mean((predictions - actual)^2) # 0.5562815 
 
 pred_intervals <- predictInterval(fm1mer.2, newdata = test_data, n.sims = 1000, level = 0.95)
 
@@ -491,7 +519,7 @@ ggplot(result.moretti, aes(x = Data)) +
 
 boxplot(residuals(model.5.1) ~ data$Brand, col = 'lightgreen')
 
-fm2mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+fm2mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
                  Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                  is_summer + cluster + Volumi.bassi + (1|Brand),
@@ -502,13 +530,13 @@ sigma2_eps # var of error
 sigma2_b <- as.numeric(get_variance_random(fm2mer.0))
 sigma2_b # var of random intercept
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
-PVRE # 0.6471791
+PVRE # 0.6666121
 
 # visualization of the random intercepts with their 95% confidence intervals
 dotplot(ranef(fm2mer.0, condVar=T))
 
 
-fm2mer.1 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+fm2mer.1 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
                  Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                  is_summer + cluster + Volumi.bassi + (1 + Prezzo_Sconto.log|Brand),
@@ -519,7 +547,7 @@ sigma2_eps # var of error
 sigma2_b <- as.numeric(get_variance_random(fm2mer.1))
 sigma2_b # var of random intercept
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
-PVRE # 0.906462
+PVRE # 0.9031011
 
 # visualization of the random intercepts with their 95% confidence intervals
 dotplot(ranef(fm2mer.1, condVar=T))
@@ -527,11 +555,11 @@ dotplot(ranef(fm2mer.1, condVar=T))
 anova(fm2mer.0, fm2mer.1) # -> fm2mer.1
 
 
-fm2mer.2 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto + Prezzo_Sconto.log +
+fm2mer.2 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                    Sconto.Solo.Volantino + 
                    Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
                    is_summer + cluster + Volumi.bassi + 
-                   (1 + Prezzo_Sconto.log + Prezzo_NoSconto|Brand),
+                   (1 + Prezzo_Sconto.log + Prezzo_NoSconto.log|Brand),
                  data = data)
 
 sigma2_eps <- as.numeric(get_variance_residual(fm2mer.2))
@@ -539,7 +567,7 @@ sigma2_eps # var of error
 sigma2_b <- as.numeric(get_variance_random(fm2mer.2))
 sigma2_b # var of random intercept
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
-PVRE # 0.9278132
+PVRE # 0.9310985
 
 # visualization of the random intercepts with their 95% confidence intervals
 dotplot(ranef(fm2mer.2, condVar=T))
@@ -561,8 +589,8 @@ qqline(unlist(ranef(fm2mer.2)$Brand), col='red', lwd=2)
 predictions <- predict(fm2mer.2, newdata = test_data)
 actual <- test_data$Vendite.in.Volume.log
 
-MAE <- mean(abs(predictions - actual)) # 0.5439345 
-MSE <- mean((predictions - actual)^2) # 0.6940848 
+MAE <- mean(abs(predictions - actual)) # 0.5466246 
+MSE <- mean((predictions - actual)^2) # 0.6983445 
 
 pred_intervals <- predictInterval(fm2mer.2, newdata = test_data, n.sims = 1000, level = 0.95)
 
@@ -593,9 +621,45 @@ ggplot(result.moretti, aes(x = Data)) +
   theme(legend.position = "bottom")
 
 
-# Final comparison between LMM Product, LMM Brand & LM -------------------------------
+# Comparison of LMM Product, LMM Brand & LM ---------------------------------------
 
 anova(fm1mer.2, fm2mer.2)
 # fm1mer.2 in better
 
 AIC(model.5.1) 
+
+
+# Comparison of Coefficients --------------------------------------------------------
+
+model_summary1 <- tidy(model.5.1, conf.int = TRUE) %>%
+  filter(term != "(Intercept)")
+
+model_summary2 <- tidy(fm1mer.2, effects = "fixed", conf.int = TRUE) %>%
+  filter(term != "(Intercept)")
+
+model_summary3 <- tidy(fm2mer.2, effects = "fixed", conf.int = TRUE) %>%
+  filter(term != "(Intercept)")
+
+model_summary_combined <- rbind(
+  transform(model_summary1[,c("term","estimate","conf.low","conf.high")], Model = "LM"),
+  transform(model_summary2[,c("term","estimate","conf.low","conf.high")], Model = "LMM - Product"),
+  transform(model_summary3[,c("term","estimate","conf.low","conf.high")], Model = "LMM - Brand")
+)
+
+term_mapping <- data.frame(term = unique(model_summary_combined$term), term_num = seq_along(unique(model_summary_combined$term)))
+
+model_summary_combined <- merge(model_summary_combined, term_mapping, by = "term")
+
+model_summary_combined <- model_summary_combined %>%
+  mutate(term_offset = term_num + 
+           ifelse(Model == "LM", -0.2, ifelse(Model == "LMM - Product", 0, 0.2)))
+
+ggplot(model_summary_combined, aes(y = term_offset, x = estimate, color = Model)) +
+  geom_point(size = 1) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.1, size = 0.7) +
+  scale_y_continuous(breaks = term_mapping$term_num,
+                     labels = term_mapping$term) +
+  labs(title = "95% CI for Beta (LM vs LMM)",
+       y = "Coefficient",
+       x = "Estimate") +
+  theme_minimal()
