@@ -461,7 +461,7 @@ ggplot(data, aes(x = Vendite.in.Valore.Con.promozioni)) +
   )
 
 ggplot(data, aes(x = Vendite.in.Volume)) + 
-  geom_histogram(binwidth = 5000, fill = "skyblue", color = "darkgrey") +
+  geom_histogram(binwidth = 5000, fill = "#1E90DC", color = "#333333") +
   labs(
     title = "Sales Distribution",
     x = "Sales Volume",
@@ -472,7 +472,7 @@ ggplot(data, aes(x = Vendite.in.Volume)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 12)
+    axis.text = element_text(size = 7)
   )
 
 ggplot(data, aes(x = Vendite.in.Volume.Senza.promozioni)) + 

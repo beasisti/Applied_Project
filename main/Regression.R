@@ -13,6 +13,7 @@ library(plm)
 library(merTools)
 library(nortest)
 library(broom.mixed)
+library(greybox)
 
 
 # Creating Dataset for Regression -------------------------------------------------------------------
@@ -47,9 +48,11 @@ data <- data %>%
                           "PERONI BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 198 CL 6 CT - 800844051001" = "Peroni 33 Cl x 6",
                           "CORONA BIRRA LAGER REGOLARE 4.6 % BOTTIGLIA DI VETRO 35.5 CL 1 CT - 750000103281" = "Corona 35.5 Cl",
                           "DREHER BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800689011133" = "Dreher 33 Cl",
-                          "MORETTI BIRRA LAGER REGOLARE 4.6 % LATTINA 66 CL 2 CT - 800143544001" = "Moretti 33 Cl x 2 (lattina)"))
+                          "MORETTI BIRRA LAGER REGOLARE 4.6 % LATTINA 66 CL 2 CT - 800143544001" = "Moretti 33 Cl x 2 (can)"))
 
-
+data <- data %>%
+  mutate(Brand = recode(Brand, "BIRRIFICIO ANGELO PORETTI 3 LUPPOLI" = "PORETTI"))
+                          
 colnames(data)[colnames(data) == "Vendite.in.Valore.Solo.Special.Pack"] <- "Sconto.Solo.Special.Pack"
 colnames(data)[colnames(data) == "Vendite.in.Valore.Solo.Volantino"] <- "Sconto.Solo.Volantino"
 colnames(data)[colnames(data) == "Vendite.in.Valore.Solo.Display"] <- "Sconto.Solo.Display"
@@ -233,9 +236,37 @@ model.5.1 <- lm(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log 
               data = data) # 0.6505
 summary(model.5.1) 
 
-par(mfrow = c(2,2))
+par(mfrow = c(1,2))
 plot(model.5.1)
 # il fit non è comunque bello ma R2 si è alzato
+
+
+model_data <- augment(model.5.1)
+ggplot(model_data, aes(.fitted, .resid)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "loess", color = "red") +
+  labs(x = "Fitted values", y = "Residuals", title = "Residuals vs Fitted") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 7)
+  )
+
+qq <- qqnorm(model_data$.resid, plot.it = FALSE)
+qq_data <- data.frame(theoretical = qq$x, sample = qq$y)
+ggplot(qq_data, aes(theoretical, sample)) +
+  geom_point(shape = 1) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  labs(x = "Theoretical Quantiles", y = "Standardized Residuals", title = "Q-Q Residuals") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text = element_text(size = 7)
+  )
 
 
 # Regression without Outliers -------------------------------------------------------------------
@@ -409,6 +440,22 @@ ggplot(model_summary, aes(y = term, x = estimate)) +
 
 boxplot(residuals(model.5.1) ~ data$Product, col = 'lightgreen')
 
+ggplot(data, aes(x = factor(Product), y = residuals(model.5.1))) +
+  geom_boxplot(fill = "#FF7F50", color = "black", outlier.size = 0.5) +
+  labs(
+    title = "Residuals Distribution for Product",
+    x = "Product",
+    y = "Residual"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 7)
+  )
+
 fm1mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
                  Sconto.Solo.Display + Sconto.Solo.Riduzione.Prezzo + 
@@ -503,21 +550,86 @@ results <- data.frame(
 result.moretti <- results[which(results$Product == 'Moretti 66 Cl'),]
 
 ggplot(result.moretti, aes(x = Data)) +
-  geom_line(aes(y = Actual), color = "blue") +
-  geom_point(aes(y = Actual), color = "blue") +
-  geom_line(aes(y = Predicted), color = "orange") +
-  geom_point(aes(y = Predicted), color = "orange") +
-  geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI), alpha = 0.2, fill = "orange") +
-  scale_color_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
-  scale_fill_manual(values = c("predicted" = "orange", "actual" = "blue"), labels = c("Predicted", "Actual")) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_point(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  geom_point(aes(y = Predicted, color = "Predicted")) +
+  geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI, fill = "Prediction Interval"), alpha = 0.2) +
+  scale_color_manual(values = c("Predicted" = "#FF7F50", "Actual" = "#1E90DC")) +
+  scale_fill_manual(values = c("Prediction Interval" = "#FF7F50")) +
   theme_minimal() +
-  labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti - LMM Product") +
-  theme(legend.position = "bottom")
+  labs(x = "Time", y = "Volume Sales (log)", title = "Prediction for Moretti 66 Cl - LMM Product",
+       color = "", fill = "") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+
+# Definisci il pinball loss
+pinball_loss <- function(realized, predicted, tau) {
+  loss <- ifelse(realized >= predicted, 
+                 tau * (realized - predicted), 
+                 (tau - 1) * (realized - predicted))
+  return(mean(loss))
+}
+
+# Dati
+realized <- actual
+predicted <- predictions
+
+# Definizione dei quantili estremi
+quantili <- seq(0.5, 0.95, by = 0.05)
+
+# Calcolo della pinball loss per ogni quantile estremo
+losses_LMMP <- sapply(quantili, function(tau) {
+  pinball_loss(realized, predicted, tau)
+})
+
+# Calcolo della media delle pinball losses
+media_pinball_loss <- mean(losses_LMMP)
+
+# Conta le violazioni del quantile 70%
+violazioni <- sum(realized < predicted)
+
+df <- data.frame(realized = realized, predicted = predicted, violation = realized < predicted)
+ggplot(df, aes(x = predicted, y = realized, color = violation)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(title = "Analisi delle Violazioni del Quantile 70%",
+       x = "Previsioni",
+       y = "Realizzato") +
+  scale_color_manual(values = c("blue", "red"), 
+                     labels = c("No Violazione", "Violazione"),
+                     name = "Violazione") +
+  theme_minimal()
+
+
+loss_upper <- pinball( actual, predictions, level= 0.70 , loss = 1, na.rm = T)
+loss_lower <- pinball( actual, predictions, level= 0.30 , loss = 1, na.rm = T)
 
 
 # LMM Brand -----------------------------------------------------------------------------
 
 boxplot(residuals(model.5.1) ~ data$Brand, col = 'lightgreen')
+
+ggplot(data, aes(x = factor(Brand), y = residuals(model.5.1))) +
+  geom_boxplot(fill = "#FF7F50", color = "black", outlier.size = 0.5) +
+  labs(
+    title = "Residuals Distribution for Brand",
+    x = "Brand",
+    y = "Residual"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 7)
+  )
 
 fm2mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
@@ -620,6 +732,31 @@ ggplot(result.moretti, aes(x = Data)) +
   labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti - LMM Brand") +
   theme(legend.position = "bottom")
 
+#Prediction on test set PINBALL LOSS
+
+# Definisci il pinball loss
+pinball_loss <- function(realized, predicted, tau) {
+  loss <- ifelse(realized >= predicted, 
+                 tau * (realized - predicted), 
+                 (tau - 1) * (realized - predicted))
+  return(mean(loss))
+}
+
+# Dati
+realized <- actual
+predicted <- predictions
+
+# Definizione dei quantili estremi
+quantili <- seq(0.5, 0.95, by = 0.05)
+
+# Calcolo della pinball loss per ogni quantile estremo
+losses_LMMB <- sapply(quantili, function(tau) {
+  pinball_loss(realized, predicted, tau)
+})
+
+# Calcolo della media delle pinball losses
+media_pinball_loss <- mean(losses_LMMB)
+
 
 # Comparison of LMM Product, LMM Brand & LM ---------------------------------------
 
@@ -627,6 +764,16 @@ anova(fm1mer.2, fm2mer.2)
 # fm1mer.2 in better
 
 AIC(model.5.1) 
+
+# Comparison con PINBALL LOSS
+
+losses <- matrix(c(losses_LM, losses_LMMP, losses_LMMB), nrow = length(losses_LM), ncol = 3)
+
+plot(quantili, losses[, 1], type = 'l', col = 'blue', xlab = 'Quantili', ylab = 'Pinball Loss', 
+     ylim = range(losses), main = 'Pinball Loss score')
+lines(quantili, losses[, 2], col = 'red')
+lines(quantili, losses[, 3], col = 'green')
+legend( 'topright', legend = c('LM', 'LMM P', 'LMM B'), col = c('blue', 'red', 'green'), lty = 1, bty = 'n', xpd = TRUE)
 
 
 # Comparison of Coefficients --------------------------------------------------------
@@ -646,6 +793,16 @@ model_summary_combined <- rbind(
   transform(model_summary3[,c("term","estimate","conf.low","conf.high")], Model = "LMM - Brand")
 )
 
+model_summary_combined <- model_summary_combined %>%
+  mutate(term = recode(term, "Prezzo_NoSconto.log" = "Price.NoDiscount.log",
+                       "Prezzo_Sconto.log" = "Price.Discount.log", 
+                       "Sconto.Solo.Volantino1" = "Discount.Flyer", 
+                       "Sconto.Solo.Display1" = "Discount.Display", 
+                       "Sconto.Solo.Riduzione.Prezzo1" = "Discount.PriceReduction",
+                       "is_summer1" = "is.Summer", 
+                       "cluster1" = "is.Leader", 
+                       "Volumi.bassi1" = "Low.Volumes"))
+
 term_mapping <- data.frame(term = unique(model_summary_combined$term), term_num = seq_along(unique(model_summary_combined$term)))
 
 model_summary_combined <- merge(model_summary_combined, term_mapping, by = "term")
@@ -654,12 +811,23 @@ model_summary_combined <- model_summary_combined %>%
   mutate(term_offset = term_num + 
            ifelse(Model == "LM", -0.2, ifelse(Model == "LMM - Product", 0, 0.2)))
 
+colore_modelli <- c("#FF7F50", "#1E90DC", "#556B2F")
+
 ggplot(model_summary_combined, aes(y = term_offset, x = estimate, color = Model)) +
   geom_point(size = 1) +
   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.1, size = 0.7) +
+  scale_color_manual(values = colore_modelli) +  # Imposta i colori manualmente
   scale_y_continuous(breaks = term_mapping$term_num,
                      labels = term_mapping$term) +
-  labs(title = "95% CI for Beta (LM vs LMM)",
+  labs(title = "95% CI for Beta",
        y = "Coefficient",
        x = "Estimate") +
-  theme_minimal()
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+

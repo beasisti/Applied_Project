@@ -58,23 +58,50 @@ n <- dim(data_aggregated)[1]
 
 k <- 2
 result.k <- kmeans(data_aggregated[, -1], centers = k) 
-result.k$cluster        
+result_clusters <- result.k$cluster        
 result.k$centers 
 centers <- as.data.frame(result.k$centers)
 
-x11()
+my_colors <- c("#FF69B4","#32CD32") 
+
+point_colors <- c(my_colors[result.k$cluster], rep("black", times = k))
+
 plot(rbind(data_aggregated[, -1], centers), 
-     col = c(result.k$cluster+5, rep('black', times = k)), 
+     col = point_colors, 
      pch = c(rep(19, times=n), rep(4, times=k)), 
-     cex = c(rep(1, times=n), rep(2, times = k)),
-     lwd = c(rep(1, times=n), rep(2, times = k)),
-     xlab = 'Total Value Sales', ylab = 'Total Volume Sales')
+     cex = c(rep(1.25, times=n), rep(2, times=k)),
+     lwd = c(rep(1, times=n), rep(2, times=k)),
+     xlab = 'Total Value Sales', ylab = 'Total Volume Sales',
+     title = 2)
 high_sales <- data_aggregated[data_aggregated$Totale_Vendite_in_Valore > 3e+07, ]
 text(high_sales[, -1], labels = high_sales$Product, pos = 2, cex = 0.8)
 
 # we have identified 2 clusters, that we can interpret as high sales and low sales, 
 # meaning that there exist two types of group in our products corresponding to those
 # who are leaders in the market and those who are followers
+
+data_aggregated <- cbind(data_aggregated, Cluster = factor(result_clusters))
+
+# Definire i colori per i punti dei dati e per i centroidi
+my_colors <- c("#FF6347", "#00CED1")  # Colori per i cluster
+centroid_color <- "black"              # Colore per i centroidi
+cluster_labels <- c("Leader", "Follower")
+
+ggplot(data = data_aggregated, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume, color = Cluster)) +
+  geom_point(shape = 19, size = 3) +  
+  geom_point(data = centers, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume), shape = 4, size = 4, stroke = 1.5, color = centroid_color) +  # Centroidi
+  geom_text(data = high_sales, aes(label = Product), hjust = 1.15, vjust = 0, size = 3, color = "black") +  # Etichette per i prodotti con vendite elevate
+  labs(x = "Value Sales", y = "Volume Sales", title = "Cluster on Total Sales of all Years") +
+  scale_color_manual(values = my_colors, labels = cluster_labels) +  # Specificare i colori e le etichette per i cluster
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+
 
 
 # K-means on time series data -------------------------------------------------------------------
@@ -104,18 +131,26 @@ beer_data_transposed <- beer_data_transposed %>%
 
 ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume, color = cluster, group = Product)) +
   geom_line() +
-  scale_color_manual(values = c('1' = '#FF00FF', '2' = '#FFFF00')) +
+  scale_color_manual(values = c('1' = '#FF6347', '2' = '#00CED1')) +
   labs(x = "Time", y = "Volume Sales", color = "Cluster") +
   theme_minimal()
 
 # coloriamo la Peroni 66 Cl
 beer_data_transposed <- beer_data_transposed %>%
-  mutate(color = ifelse(Product == "Peroni 66 Cl", "red", as.character(cluster)))
-ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume, color = color, group = Product)) +
+  mutate(color = ifelse(Product == "Peroni 66 Cl", "#B22222", as.character(cluster)))
+ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume.log, color = color, group = Product)) +
   geom_line() +
-  scale_color_manual(values = c('1' = '#FF00FF', '2' = '#FFFF00', 'red' = 'red')) +
-  labs(x = "Time", y = "Volume Sales", color = "Cluster") +
-  theme_minimal()
+  scale_color_manual(values = c('#B22222', my_colors), labels = c('Peroni 66 Cl', 'Leader', 'Follower')) +
+  labs(x = "Time", y = "Volume Sales", color = "Cluster", title = 'Cluster on Time-Series Sales') +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+
 
 # log scale
 ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume.log, color = cluster, group = Product)) +
@@ -156,6 +191,7 @@ final_clusters <- data.frame(Product = unique(data$Product))
 year_counter <- 1  # Initialize the counter
 
 for (custom_year in custom_years) {
+  # custom_year = '2023'
   data_year <- data %>%
     filter(Custom_Year == custom_year) %>%
     group_by(Product) %>%
@@ -167,7 +203,7 @@ for (custom_year in custom_years) {
   result.k <- kmeans(data_year[, -1], centers = k)
   
   data_year$cluster <- result.k$cluster
-  
+  result_clusters <- result.k$cluster
   cluster_totals <- data_year %>%
     group_by(cluster) %>%
     summarise(Totale_Vendite_in_Valore = sum(Totale_Vendite_in_Valore))
@@ -195,6 +231,28 @@ for (custom_year in custom_years) {
   text(cluster_2_products[, -1], labels = cluster_2_products$Product, pos = 1, cex = 0.8)
   
   year_counter <- year_counter + 1  
+  
+  # data_year1 <- cbind(data_year, Cluster = factor(result_clusters))
+  # data_year1$Cluster <- as.factor(ifelse(data_year1$Cluster == 1, 2, 1))
+  # my_colors <- c("#FF6347", "#00CED1")  
+  # centroid_color <- "black"              
+  # cluster_labels <- c("Leader", "Follower")
+  
+  # ggplot(data = data_year1, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume, color = Cluster)) +
+  #   geom_point(shape = 19, size = 3) +  
+  #   geom_point(data = centers, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume), shape = 4, size = 4, stroke = 1.5, color = centroid_color) +  # Centroidi
+  #   geom_text(data = data_year1[data_year1$Product == "Ichnusa non filtrata 50 Cl", ], aes(label = Product), hjust = 0.25, vjust = -1.5, size = 3, color = "black", nudge_x = 10000, nudge_y = -10000) +  # Etichetta per il prodotto "Ichnusa"
+  #   geom_text(data = data_year1[data_year1$Cluster == 1 & data_year1$Product != "Ichnusa non filtrata 50 Cl", ], aes(label = Product), hjust = 1.15, vjust = -0.15, size = 3, color = "black") +  # Altre etichette per i prodotti con vendite elevate
+  #   labs(x = "Value Sales", y = "Volume Sales", title = "Cluster on Total Sales of Year 5") +
+  #   scale_color_manual(values = my_colors, labels = cluster_labels) +  # Specificare i colori e le etichette per i cluster
+  #   theme_minimal() +
+  #   theme(
+  #     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+  #     axis.title.x = element_text(size = 14),
+  #     axis.title.y = element_text(size = 14),
+  #     axis.text.x = element_text(size = 7),
+  #     axis.text.y = element_text(size = 7)
+  #   )
 }
 
 # interessante, nella regressione però direi di usare il risultato sui dati aggregati
