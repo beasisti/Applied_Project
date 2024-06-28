@@ -32,13 +32,19 @@ data <- data %>%
                           "PERONI BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 198 CL 6 CT - 800844051001" = "Peroni 33 Cl x 6",
                           "CORONA BIRRA LAGER REGOLARE 4.6 % BOTTIGLIA DI VETRO 35.5 CL 1 CT - 750000103281" = "Corona 35.5 Cl",
                           "DREHER BIRRA LAGER REGOLARE 4.7 % BOTTIGLIA DI VETRO 99 CL 3 CT - 800689011133" = "Dreher 33 Cl",
-                          "MORETTI BIRRA LAGER REGOLARE 4.6 % LATTINA 66 CL 2 CT - 800143544001" = "Moretti 33 Cl x 2 (lattina)"))
+                          "MORETTI BIRRA LAGER REGOLARE 4.6 % LATTINA 66 CL 2 CT - 800143544001" = "Moretti 33 Cl x 2 (can)"))
 
 data <- data %>%
   mutate(Brand = recode(Brand, "BIRRIFICIO ANGELO PORETTI 3 LUPPOLI" = "PORETTI"))
 
 data <- data %>%
+  mutate(Vendor = recode(Vendor, "SWINKELS FAMILY BREWERS ITALIA" = "SWINKELS"))
+
+data <- data %>%
   mutate_at(vars(8:38), as.factor)
+
+data <- data %>%
+  mutate(Vendite.in.Volume.log = log(Vendite.in.Volume))
 
 # Analisi esplorativa  -------------------------------------------------------------------
 
@@ -46,7 +52,7 @@ dati <- data[, c(5,6,7,39,40,41,42)]
 
 colnames(dati) <- c("SalesValue", "SalesValueWithoutPromotions", "SalesValueWithPromotions",
                     "SalesVolume", "SalesVolumeWithPromotions", "SalesVolumeWithoutPromotions",
-                    "Discount")
+                    "% Discount")
 
 # summary delle variabili numeriche
 summary(dati)
@@ -200,9 +206,11 @@ ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni, color = Product
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 12),     
+    axis.text.y = element_text(size = 7),    
+    axis.text.x = element_text(size = 12),
     legend.title = element_text(size = 14),  
-    legend.text = element_text(size = 12)   
+    legend.text = element_text(size = 12),
+    strip.text.y = element_text(size = 4)
   )
 
 ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Product)) +
@@ -219,9 +227,11 @@ ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Produ
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 12),     
+    axis.text.y = element_text(size = 7),    
+    axis.text.x = element_text(size = 12),
     legend.title = element_text(size = 14),  
-    legend.text = element_text(size = 12)    
+    legend.text = element_text(size = 12),
+    strip.text.y = element_text(size = 4)  
   )
 
 ggplot(data, aes(x = Time, y = Vendite.in.Volume, color = Product)) +
@@ -336,12 +346,12 @@ ggplot(data, aes(x = factor(Month), y = Sconto)) +
   theme_minimal() +
   scale_x_discrete(labels = month.abb)
 
-ggplot(data, aes(x = factor(Product), y = Vendite.in.Volume)) +
-  geom_boxplot(fill = "skyblue", color = "black", outlier.size = 0.5) +
+ggplot(data, aes(x = factor(Product), y = Vendite.in.Volume.log)) +
+  geom_boxplot(fill = "#D2691E", color = "black", outlier.size = 0.5) +
   labs(
-    title = "Sales Distribution for Product",
+    title = "Sales (log) Distribution for Product",
     x = "Product",
-    y = "Sales Volume"
+    y = "Sales Volume (log)"
   ) +
   theme_minimal() +
   theme(
@@ -349,16 +359,16 @@ ggplot(data, aes(x = factor(Product), y = Vendite.in.Volume)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 12)
+    axis.text.y = element_text(size = 7)
   )
 
 
-ggplot(data, aes(x = factor(Brand), y = Vendite.in.Volume)) +
-  geom_boxplot(fill = "skyblue", color = "black", outlier.size = 0.5) +
+ggplot(data, aes(x = factor(Brand), y = Vendite.in.Volume.log)) +
+  geom_boxplot(fill = "#D2691E", color = "black", outlier.size = 0.5) +
   labs(
-    title = "Sales Distribution for Brand",
+    title = "Sales (log) Distribution for Brand",
     x = "Brand",
-    y = "Sales Volume"
+    y = "Sales Volume (log)"
   ) +
   theme_minimal() +
   theme(
@@ -366,7 +376,40 @@ ggplot(data, aes(x = factor(Brand), y = Vendite.in.Volume)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 12)
+    axis.text.y = element_text(size = 7)
+  )
+
+ggplot(data, aes(x = factor(Product), y = Sconto)) +
+  geom_boxplot(fill = "#1E90FF", color = "black", outlier.size = 0.5) +
+  labs(
+    title = "Discounts Distribution for Product",
+    x = "Product",
+    y = "% Discount"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 7)
+  )
+
+
+ggplot(data, aes(x = factor(Brand), y = Sconto)) +
+  geom_boxplot(fill = "#1E90FF", color = "black", outlier.size = 0.5) +
+  labs(
+    title = "Discounts Distribution for Brand",
+    x = "Brand",
+    y = "% Discounts"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 7)
   )
 
 

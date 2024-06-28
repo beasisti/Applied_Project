@@ -374,3 +374,38 @@ bartlett.test(x, factor1)
 # non rispettata, mettiamo che le assunzioni non vengono rispettate come 
 # weaknesses dell'analisi
 
+
+# Boxplot Vendite ~ Tipo_sconto -----------------------------------------------
+
+data <- data %>%
+  mutate(Tipo_sconto = recode(Tipo_sconto,
+                              "Vendite.in.Valore.Solo.Volantino, Vendite.in.Valore.Solo.Display, Vendite.in.Valore.Solo.Riduzione.Prezzo" = "F+D+RP",
+                              "Vendite.in.Valore.Solo.Display, Vendite.in.Valore.Solo.Riduzione.Prezzo" = "D+RP",          
+                              "Vendite.in.Valore.Solo.Volantino, Vendite.in.Valore.Solo.Display, Vendite.in.Valore.Solo.Riduzione.Prezzo, Vendite.in.Valore.Solo.Sconto.Loyalty" = "F+D+RP+L",
+                              "Vendite.in.Valore.Solo.Volantino, Vendite.in.Valore.Solo.Riduzione.Prezzo" = "F+RP",
+                              "Vendite.in.Valore.Solo.Riduzione.Prezzo" = "RP",
+                              "Vendite.in.Valore.Solo.Display, Vendite.in.Valore.Solo.Riduzione.Prezzo, Vendite.in.Valore.Solo.Sconto.Loyalty" = "D+RP+L",
+                              "Vendite.in.Valore.Solo.Volantino" = "F",
+                              "Vendite.in.Valore.Solo.Special.Pack, Vendite.in.Valore.Solo.Volantino, Vendite.in.Valore.Solo.Display, Vendite.in.Valore.Solo.Riduzione.Prezzo" = "SP+F+D+RP",
+                              "Vendite.in.Valore.Solo.Volantino, Vendite.in.Valore.Solo.Riduzione.Prezzo, Vendite.in.Valore.Solo.Sconto.Loyalty" = "F+RP+L",
+                              "Vendite.in.Valore.Solo.Riduzione.Prezzo, Vendite.in.Valore.Solo.Sconto.Loyalty" = "RP+L",                   
+                              "Vendite.in.Valore.Solo.Volantino, Vendite.in.Valore.Solo.Display, Vendite.in.Valore.Solo.Sconto.Loyalty" = "F+D+L",
+                              "Vendite.in.Valore.Solo.Volantino, Vendite.in.Valore.Solo.Display" = "F+D",
+                              "Vendite.in.Valore.Solo.Special.Pack, Vendite.in.Valore.Solo.Display, Vendite.in.Valore.Solo.Riduzione.Prezzo" = "SP+D+RP",
+                              "Vendite.in.Valore.Solo.Display" = "D"))
+
+ggplot(data, aes(x = factor(Tipo_sconto), y = Vendite.in.Volume.log)) +
+  geom_boxplot(fill = "#D2691E", color = "black", outlier.size = 0.5) +
+  labs(
+    title = "Sales (log) Distribution for Discount Type",
+    x = "Discounts",
+    y = "Sales Volume (log)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 7)
+  )
