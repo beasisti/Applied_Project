@@ -14,6 +14,7 @@ library(merTools)
 library(nortest)
 library(broom.mixed)
 library(greybox)
+library(patchwork)
 
 
 # Creating Dataset for Regression -------------------------------------------------------------------
@@ -509,7 +510,89 @@ PVRE # 0.9196346
 # visualization of the random intercepts with their 95% confidence intervals
 dotplot(ranef(fm1mer.2, condVar=T))
 
-anova(fm1mer.1, fm1mer.2) # -> fm1mer.2
+ranef_list <- ranef(fm1mer.2, condVar = TRUE)
+ranef_df <- lapply(names(ranef_list), function(term) {
+  df <- as.data.frame(ranef_list[[term]])
+  df$grp <- rownames(df)
+  df$term <- term
+  return(df)
+}) %>%
+  bind_rows()
+
+se_list <- arm::se.ranef(fm1mer.2)
+
+se_df <- lapply(names(se_list), function(term) {
+  df <- as.data.frame(se_list[[term]])
+  df$grp <- rownames(df)
+  df$term <- term
+  return(df)
+}) %>%
+  bind_rows()
+
+ranef_df <- ranef_df %>%
+  left_join(se_df, by = c("grp", "term"))
+
+colnames(ranef_df) <- gsub("\\.x$", "_estimate", colnames(ranef_df))
+colnames(ranef_df) <- gsub("\\.y$", "_se", colnames(ranef_df))
+
+ranef_df <- ranef_df %>%
+  mutate(grp = reorder(grp, `(Intercept)_estimate`))
+
+ranef_df$term <- 'Intercept'
+
+p1 <- ggplot(ranef_df, aes(x = `(Intercept)_estimate`, y = grp)) +
+  geom_point(color = '#556B2F', size = 1.5) +
+  geom_errorbarh(aes(xmin = `(Intercept)_estimate` - 1.96 * `(Intercept)_se`, 
+                     xmax = `(Intercept)_estimate` + 1.96 * `(Intercept)_se`), 
+                 height = 0.25, color = '#556B2F', size = 1) +
+  facet_wrap(~ term, scales = "free") +
+  labs(title = "", x = "Estimate", y = "Product") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+
+ranef_df$term <- 'Discounted Price'
+
+p2 <- ggplot(ranef_df, aes(x = `Prezzo_Sconto.log_estimate`, y = grp)) +
+  geom_point(color = '#556B2F', size = 1.5) +
+  geom_errorbarh(aes(xmin = `Prezzo_Sconto.log_estimate` - 1.96 * `Prezzo_Sconto.log_se`, 
+                     xmax = `Prezzo_Sconto.log_estimate` + 1.96 * `Prezzo_Sconto.log_se`), 
+                 height = 0.25, color = '#556B2F', size = 1) +
+  facet_wrap(~ term, scales = "free") +
+  labs(title = "Random Effects with 95% CI", x = "Estimate", y = "") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+
+ranef_df$term <- 'Undiscounted Price'
+
+p3 <- ggplot(ranef_df, aes(x = `Prezzo_NoSconto.log_estimate`, y = grp)) +
+  geom_point(color = '#556B2F', size = 1.5) +
+  geom_errorbarh(aes(xmin = `Prezzo_NoSconto.log_estimate` - 1.96 * `Prezzo_NoSconto.log_se`, 
+                     xmax = `Prezzo_NoSconto.log_estimate` + 1.96 * `Prezzo_NoSconto.log_se`), 
+                 height = 0.25, color = '#556B2F', size = 1) +
+  facet_wrap(~ term, scales = "free") +
+  labs(title = "", x = "Estimate", y = "") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+
+p1 + p2 + p3
 
 # Diagnostic
 # 1) Assessing Assumption on the within-group errors
@@ -809,7 +892,7 @@ model_summary_combined <- merge(model_summary_combined, term_mapping, by = "term
 
 model_summary_combined <- model_summary_combined %>%
   mutate(term_offset = term_num + 
-           ifelse(Model == "LM", -0.2, ifelse(Model == "LMM - Product", 0, 0.2)))
+           ifelse(Model == "LMM - Product", -0.2, ifelse(Model == "LMM - Brand", 0, 0.2)))
 
 colore_modelli <- c("#FF7F50", "#1E90DC", "#556B2F")
 
