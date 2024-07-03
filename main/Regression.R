@@ -117,6 +117,8 @@ data <- merge(data, data.cluster[, c("Product", "cluster", "Time")], by = c("Pro
 data$cluster <- as.factor(data$cluster)
 # 1 is for leader, 0 for follower
 
+data[is.na(data)] <- 0
+
 
 # Correlation plot -------------------------------------------------------------------
 
@@ -243,7 +245,7 @@ plot(model.5.1)
 
 
 model_data <- augment(model.5.1)
-ggplot(model_data, aes(.fitted, .resid)) +
+plot <- ggplot(model_data, aes(.fitted, .resid)) +
   geom_point(shape = 1) +
   geom_smooth(method = "loess", color = "red") +
   labs(x = "Fitted values", y = "Residuals", title = "Residuals vs Fitted") +
@@ -252,12 +254,25 @@ ggplot(model_data, aes(.fitted, .resid)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 7)
-  )
+    axis.text = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/regr1.png", 
+  plot = plot, 
+  width = 4,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
 
 qq <- qqnorm(model_data$.resid, plot.it = FALSE)
 qq_data <- data.frame(theoretical = qq$x, sample = qq$y)
-ggplot(qq_data, aes(theoretical, sample)) +
+plot <- ggplot(qq_data, aes(theoretical, sample)) +
   geom_point(shape = 1) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   labs(x = "Theoretical Quantiles", y = "Standardized Residuals", title = "Q-Q Residuals") +
@@ -266,8 +281,20 @@ ggplot(qq_data, aes(theoretical, sample)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 7)
-  )
+    axis.text = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/regr2.png", 
+  plot = plot, 
+  width = 4,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
 
 # Regression without Outliers -------------------------------------------------------------------
@@ -394,6 +421,27 @@ ggplot(result.moretti_long, aes(x = Data, y = value, color = variable)) +
   scale_color_manual(values = c("Actual" = "blue", "Predicted" = "orange"))
 
 
+# Prediction on test set PINBALL LOSS
+
+pinball_loss <- function(realized, predicted, tau) {
+  loss <- ifelse(realized >= predicted, 
+                 tau * (realized - predicted), 
+                 (tau - 1) * (realized - predicted))
+  return(mean(loss))
+}
+
+realized <- actual
+predicted <- predictions
+
+quantili <- seq(0.5, 0.95, by = 0.05)
+
+losses_LM <- sapply(quantili, function(tau) {
+  pinball_loss(realized, predicted, tau)
+})
+
+media_pinball_loss <- mean(losses_LM) # 0.3171618
+
+
 # Coefficients -------------------------------------------------------------------
 
 model_summary <- tidy(model.5.1, conf.int = TRUE) %>%
@@ -441,7 +489,7 @@ ggplot(model_summary, aes(y = term, x = estimate)) +
 
 boxplot(residuals(model.5.1) ~ data$Product, col = 'lightgreen')
 
-ggplot(data, aes(x = factor(Product), y = residuals(model.5.1))) +
+plot <- ggplot(data, aes(x = factor(Product), y = residuals(model.5.1))) +
   geom_boxplot(fill = "#FF7F50", color = "black", outlier.size = 0.5) +
   labs(
     title = "Residuals Distribution for Product",
@@ -454,8 +502,21 @@ ggplot(data, aes(x = factor(Product), y = residuals(model.5.1))) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/res_prod.png", 
+  plot = plot, 
+  width = 8,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
 
 fm1mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
@@ -553,8 +614,13 @@ p1 <- ggplot(ranef_df, aes(x = `(Intercept)_estimate`, y = grp)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+
 
 ranef_df$term <- 'Discounted Price'
 
@@ -571,7 +637,11 @@ p2 <- ggplot(ranef_df, aes(x = `Prezzo_Sconto.log_estimate`, y = grp)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7)
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
   )
 
 ranef_df$term <- 'Undiscounted Price'
@@ -589,10 +659,28 @@ p3 <- ggplot(ranef_df, aes(x = `Prezzo_NoSconto.log_estimate`, y = grp)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7)
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
   )
 
-p1 + p2 + p3
+plot <- p1 + p2 + p3 +
+  plot_layout(guides = "collect") & 
+  theme(
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA)   # Sfondo trasparente per l'intera trama
+  )
+
+ggsave(
+  filename = "./Plots/plot poster/dotplot.png", 
+  plot = plot, 
+  width = 10,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
 # Diagnostic
 # 1) Assessing Assumption on the within-group errors
@@ -632,7 +720,7 @@ results <- data.frame(
 
 result.moretti <- results[which(results$Product == 'Moretti 66 Cl'),]
 
-ggplot(result.moretti, aes(x = Data)) +
+plot <- ggplot(result.moretti, aes(x = Data)) +
   geom_line(aes(y = Actual, color = "Actual")) +
   geom_point(aes(y = Actual, color = "Actual")) +
   geom_line(aes(y = Predicted, color = "Predicted")) +
@@ -648,10 +736,22 @@ ggplot(result.moretti, aes(x = Data)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/pred.png", 
+  plot = plot, 
+  width = 8,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
-# Definisci il pinball loss
+
 pinball_loss <- function(realized, predicted, tau) {
   loss <- ifelse(realized >= predicted, 
                  tau * (realized - predicted), 
@@ -659,22 +759,17 @@ pinball_loss <- function(realized, predicted, tau) {
   return(mean(loss))
 }
 
-# Dati
 realized <- actual
 predicted <- predictions
 
-# Definizione dei quantili estremi
 quantili <- seq(0.5, 0.95, by = 0.05)
 
-# Calcolo della pinball loss per ogni quantile estremo
 losses_LMMP <- sapply(quantili, function(tau) {
   pinball_loss(realized, predicted, tau)
 })
 
-# Calcolo della media delle pinball losses
-media_pinball_loss <- mean(losses_LMMP)
+media_pinball_loss <- mean(losses_LMMP) # 0.235853
 
-# Conta le violazioni del quantile 70%
 violazioni <- sum(realized < predicted)
 
 df <- data.frame(realized = realized, predicted = predicted, violation = realized < predicted)
@@ -689,7 +784,6 @@ ggplot(df, aes(x = predicted, y = realized, color = violation)) +
                      name = "Violazione") +
   theme_minimal()
 
-
 loss_upper <- pinball( actual, predictions, level= 0.70 , loss = 1, na.rm = T)
 loss_lower <- pinball( actual, predictions, level= 0.30 , loss = 1, na.rm = T)
 
@@ -698,7 +792,7 @@ loss_lower <- pinball( actual, predictions, level= 0.30 , loss = 1, na.rm = T)
 
 boxplot(residuals(model.5.1) ~ data$Brand, col = 'lightgreen')
 
-ggplot(data, aes(x = factor(Brand), y = residuals(model.5.1))) +
+plot <- ggplot(data, aes(x = factor(Brand), y = residuals(model.5.1))) +
   geom_boxplot(fill = "#FF7F50", color = "black", outlier.size = 0.5) +
   labs(
     title = "Residuals Distribution for Brand",
@@ -711,8 +805,21 @@ ggplot(data, aes(x = factor(Brand), y = residuals(model.5.1))) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/res_brand.png", 
+  plot = plot, 
+  width = 8,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
 
 fm2mer.0 <- lmer(Vendite.in.Volume.log ~ Prezzo_NoSconto.log + Prezzo_Sconto.log +
                  Sconto.Solo.Volantino + 
@@ -815,9 +922,9 @@ ggplot(result.moretti, aes(x = Data)) +
   labs(x = "Time", y = "Volume Sales", title = "Prediction Intervals for Moretti - LMM Brand") +
   theme(legend.position = "bottom")
 
-#Prediction on test set PINBALL LOSS
 
-# Definisci il pinball loss
+# Prediction on test set PINBALL LOSS
+
 pinball_loss <- function(realized, predicted, tau) {
   loss <- ifelse(realized >= predicted, 
                  tau * (realized - predicted), 
@@ -825,20 +932,16 @@ pinball_loss <- function(realized, predicted, tau) {
   return(mean(loss))
 }
 
-# Dati
 realized <- actual
 predicted <- predictions
 
-# Definizione dei quantili estremi
 quantili <- seq(0.5, 0.95, by = 0.05)
 
-# Calcolo della pinball loss per ogni quantile estremo
 losses_LMMB <- sapply(quantili, function(tau) {
   pinball_loss(realized, predicted, tau)
 })
 
-# Calcolo della media delle pinball losses
-media_pinball_loss <- mean(losses_LMMB)
+media_pinball_loss <- mean(losses_LMMB) # 0.2710381
 
 
 # Comparison of LMM Product, LMM Brand & LM ---------------------------------------
@@ -848,8 +951,8 @@ anova(fm1mer.2, fm2mer.2)
 
 AIC(model.5.1) 
 
-# Comparison con PINBALL LOSS
 
+# Comparison with PINBALL LOSS
 losses <- matrix(c(losses_LM, losses_LMMP, losses_LMMB), nrow = length(losses_LM), ncol = 3)
 
 plot(quantili, losses[, 1], type = 'l', col = 'blue', xlab = 'Quantili', ylab = 'Pinball Loss', 
@@ -896,7 +999,7 @@ model_summary_combined <- model_summary_combined %>%
 
 colore_modelli <- c("#FF7F50", "#1E90DC", "#556B2F")
 
-ggplot(model_summary_combined, aes(y = term_offset, x = estimate, color = Model)) +
+plot <- ggplot(model_summary_combined, aes(y = term_offset, x = estimate, color = Model)) +
   geom_point(size = 1) +
   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.1, size = 0.7) +
   scale_color_manual(values = colore_modelli) +  # Imposta i colori manualmente
@@ -911,6 +1014,18 @@ ggplot(model_summary_combined, aes(y = term_offset, x = estimate, color = Model)
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7)
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
   )
 
+ggsave(
+  filename = "./Plots/plot poster/beta.png", 
+  plot = plot, 
+  width = 6,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)

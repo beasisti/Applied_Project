@@ -11,6 +11,7 @@ library(lubridate)
 library(tidyr)
 library(plm)
 library(dtwclust)
+library(grid)
 
 
 # Data -------------------------------------------------------------------
@@ -81,16 +82,18 @@ text(high_sales[, -1], labels = high_sales$Product, pos = 2, cex = 0.8)
 # who are leaders in the market and those who are followers
 
 data_aggregated <- cbind(data_aggregated, Cluster = factor(result_clusters))
-
+data_aggregated$Cluster <- as.factor(ifelse(data_aggregated$Cluster == 1, 2, 1))
 # Definire i colori per i punti dei dati e per i centroidi
 my_colors <- c("#FF6347", "#00CED1")  # Colori per i cluster
 centroid_color <- "black"              # Colore per i centroidi
 cluster_labels <- c("Leader", "Follower")
 
-ggplot(data = data_aggregated, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume, color = Cluster)) +
+plot <- ggplot(data = data_aggregated, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume, color = Cluster)) +
   geom_point(shape = 19, size = 3) +  
   geom_point(data = centers, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume), shape = 4, size = 4, stroke = 1.5, color = centroid_color) +  # Centroidi
+  geom_point(data = data_aggregated[data_aggregated$Product == "Peroni 66 Cl", ], aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume), shape = 21, size = 3, stroke = 0.7, color = "black", fill = "#00CED1") +  # Punto con contorno per "Peroni 66 Cl"
   geom_text(data = high_sales, aes(label = Product), hjust = 1.15, vjust = 0, size = 3, color = "black") +  # Etichette per i prodotti con vendite elevate
+  geom_text(data = data_aggregated[data_aggregated$Product == "Peroni 66 Cl", ], aes(label = Product), hjust = 1.15, vjust = 0, size = 3, color = "black", nudge_x = 10000, nudge_y = -10000) +  
   labs(x = "Value Sales", y = "Volume Sales", title = "Cluster on Total Sales of all Years") +
   scale_color_manual(values = my_colors, labels = cluster_labels) +  # Specificare i colori e le etichette per i cluster
   theme_minimal() +
@@ -99,9 +102,20 @@ ggplot(data = data_aggregated, aes(x = Totale_Vendite_in_Valore, y = Totale_Vend
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7)
-  )
-
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/clust.png", 
+  plot = plot, 
+  width = 8,    # Larghezza del grafico
+  height = 5.5,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
 
 # K-means on time series data -------------------------------------------------------------------
@@ -138,18 +152,31 @@ ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume, color = cluste
 # coloriamo la Peroni 66 Cl
 beer_data_transposed <- beer_data_transposed %>%
   mutate(color = ifelse(Product == "Peroni 66 Cl", "#B22222", as.character(cluster)))
-ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume.log, color = color, group = Product)) +
+plot <- ggplot(beer_data_transposed, aes(x = Date, y = Vendite.in.Volume.log, color = cluster, group = Product)) +
   geom_line() +
-  scale_color_manual(values = c('#B22222', my_colors), labels = c('Peroni 66 Cl', 'Leader', 'Follower')) +
-  labs(x = "Time", y = "Volume Sales", color = "Cluster", title = 'Cluster on Time-Series Sales') +
+  scale_color_manual(values = my_colors, labels = c('Leader', 'Follower')) +
+  labs(x = "Time", y = "Volume Sales (log)", color = "Cluster", title = 'Cluster on Time-Series Sales') +
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/clust_ts.png", 
+  plot = plot, 
+  width = 10,    # Larghezza del grafico
+  height = 5,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
 
 
 # log scale
@@ -191,7 +218,7 @@ final_clusters <- data.frame(Product = unique(data$Product))
 year_counter <- 1  # Initialize the counter
 
 for (custom_year in custom_years) {
-  # custom_year = '2023'
+  custom_year = '2023'
   data_year <- data %>%
     filter(Custom_Year == custom_year) %>%
     group_by(Product) %>%
@@ -232,27 +259,44 @@ for (custom_year in custom_years) {
   
   year_counter <- year_counter + 1  
   
-  # data_year1 <- cbind(data_year, Cluster = factor(result_clusters))
-  # data_year1$Cluster <- as.factor(ifelse(data_year1$Cluster == 1, 2, 1))
-  # my_colors <- c("#FF6347", "#00CED1")  
-  # centroid_color <- "black"              
-  # cluster_labels <- c("Leader", "Follower")
+  data_year1 <- cbind(data_year, Cluster = factor(result_clusters))
+  data_year1$Cluster <- as.factor(ifelse(data_year1$Cluster == 1, 2, 1))
+  my_colors <- c("#FF6347", "#00CED1")  
+  centroid_color <- "black"              
+  cluster_labels <- c("Leader", "Follower")
   
-  # ggplot(data = data_year1, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume, color = Cluster)) +
-  #   geom_point(shape = 19, size = 3) +  
-  #   geom_point(data = centers, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume), shape = 4, size = 4, stroke = 1.5, color = centroid_color) +  # Centroidi
-  #   geom_text(data = data_year1[data_year1$Product == "Ichnusa non filtrata 50 Cl", ], aes(label = Product), hjust = 0.25, vjust = -1.5, size = 3, color = "black", nudge_x = 10000, nudge_y = -10000) +  # Etichetta per il prodotto "Ichnusa"
-  #   geom_text(data = data_year1[data_year1$Cluster == 1 & data_year1$Product != "Ichnusa non filtrata 50 Cl", ], aes(label = Product), hjust = 1.15, vjust = -0.15, size = 3, color = "black") +  # Altre etichette per i prodotti con vendite elevate
-  #   labs(x = "Value Sales", y = "Volume Sales", title = "Cluster on Total Sales of Year 5") +
-  #   scale_color_manual(values = my_colors, labels = cluster_labels) +  # Specificare i colori e le etichette per i cluster
-  #   theme_minimal() +
-  #   theme(
-  #     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
-  #     axis.title.x = element_text(size = 14),
-  #     axis.title.y = element_text(size = 14),
-  #     axis.text.x = element_text(size = 7),
-  #     axis.text.y = element_text(size = 7)
-  #   )
+  plot <- ggplot(data = data_year1, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume, color = Cluster)) +
+     geom_point(shape = 19, size = 3) +  
+     geom_point(data = centers, aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume), shape = 4, size = 4, stroke = 1.5, color = centroid_color) +  # Centroidi
+     geom_point(data = data_year1[data_year1$Product == "Peroni 66 Cl", ], aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume), shape = 21, size = 3, stroke = 0.7, color = "black", fill = "#00CED1") +  # Punto con contorno per "Peroni 66 Cl"
+     geom_point(data = data_year1[data_year1$Product == "Heineken 66 Cl", ], aes(x = Totale_Vendite_in_Valore, y = Totale_Vendite_in_Volume), shape = 21, size = 3, stroke = 0.7, color = "black", fill = "#00CED1") +  # Punto con contorno per "Peroni 66 Cl"
+     geom_text(data = data_year1[data_year1$Product == "Ichnusa non filtrata 50 Cl", ], aes(label = Product), hjust = 0.25, vjust = -1.5, size = 3, color = "black", nudge_x = 10000, nudge_y = -10000) +  # Etichetta per il prodotto "Ichnusa"
+     geom_text(data = data_year1[data_year1$Product == "Peroni 66 Cl", ], aes(label = Product), hjust = 0.25, vjust = 1.75, size = 3, color = "black", nudge_x = 10000, nudge_y = -10000) +  
+     geom_text(data = data_year1[data_year1$Product == "Heineken 66 Cl", ], aes(label = Product), hjust = 1.15, vjust = -0.15, size = 3, color = "black", nudge_x = 10000, nudge_y = -10000) +  
+     geom_text(data = data_year1[data_year1$Cluster == 1 & data_year1$Product != "Ichnusa non filtrata 50 Cl", ], aes(label = Product), hjust = 1.15, vjust = -0.15, size = 3, color = "black") +  # Altre etichette per i prodotti con vendite elevate
+     labs(x = "Value Sales", y = "Volume Sales", title = "Cluster on Total Sales of Year 5") +
+     scale_color_manual(values = my_colors, labels = cluster_labels) +  # Specificare i colori e le etichette per i cluster
+     theme_minimal() +
+     theme(
+       plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+       axis.title.x = element_text(size = 14),
+       axis.title.y = element_text(size = 14),
+       axis.text.x = element_text(size = 7),
+       axis.text.y = element_text(size = 7), 
+       panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+       plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+       panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+       panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+     )  
+  ggsave(
+    filename = "./Plots/plot poster/clu5.png", 
+    plot = plot, 
+    width = 8,    # Larghezza del grafico
+    height = 5.5,    # Altezza del grafico
+    units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+    bg = "transparent"
+  )
+    
 }
 
 # interessante, nella regressione però direi di usare il risultato sui dati aggregati

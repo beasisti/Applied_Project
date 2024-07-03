@@ -12,6 +12,7 @@ library(tidyr)
 library(plm)
 library(merTools)
 library(MVN)
+library(cowplot)
 
 
 # mi interessa guardare: Vendite.in.Volume rispetto alla categorizzazione data da Product
@@ -394,10 +395,10 @@ data <- data %>%
                               "Vendite.in.Valore.Solo.Special.Pack, Vendite.in.Valore.Solo.Display, Vendite.in.Valore.Solo.Riduzione.Prezzo" = "SP+D+RP",
                               "Vendite.in.Valore.Solo.Display" = "D"))
 
-ggplot(data, aes(x = factor(Tipo_sconto), y = Vendite.in.Volume.log)) +
+p <- ggplot(data, aes(x = factor(Tipo_sconto), y = Vendite.in.Volume.log)) +
   geom_boxplot(fill = "#D2691E", color = "black", outlier.size = 0.5) +
   labs(
-    title = "Sales (log) Distribution for Discount Type",
+    title = "Sales Distribution for Discount Type",
     x = "Discounts",
     y = "Sales Volume (log)"
   ) +
@@ -407,5 +408,33 @@ ggplot(data, aes(x = factor(Tipo_sconto), y = Vendite.in.Volume.log)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7)
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+
+legend_text <- "F: Flyer discount\nD: Display discount\nL: Loyalty discount\nRP: Reduction Price discount\nSP: Special Pack discount"
+
+legend_box <- ggdraw() + 
+  draw_text(" ", x = 0.15, y = 0.9, hjust = 0, vjust = 1, size = 10) + # Spazio vuoto orizzontale per spostare a destra
+  draw_text(legend_text, x = 0.15, y = 0.9, hjust = 0, vjust = 2, size = 7) +# Legenda spostata in basso e a destra
+  theme_void() +
+  theme(
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA)    # Sfondo trasparente per l'intera legenda
   )
+
+# Combina il grafico e la legenda
+combined_plot <- plot_grid(p, legend_box, ncol = 2, rel_widths = c(3, 1)) +
+  theme(plot.background = element_rect(fill = "transparent", color = NA))
+
+ggsave(
+  filename = "./Plots/plot poster/box_sales_disc.png", 
+  plot = combined_plot, 
+  width = 8,    # Larghezza del grafico
+  height = 3,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)

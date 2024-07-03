@@ -192,7 +192,7 @@ ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Produ
     legend.text = element_text(size = 12)    
   )
 
-ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni, color = Product)) + 
+plot <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni, color = Product)) + 
   geom_point(size = 0.2) +
   geom_line(linewidth = 0.75) +
   labs(
@@ -210,10 +210,22 @@ ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni, color = Product
     axis.text.x = element_text(size = 12),
     legend.title = element_text(size = 14),  
     legend.text = element_text(size = 12),
-    strip.text.y = element_text(size = 4)
+    strip.text.y = element_text(size = 4), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
   )
+ggsave(
+  filename = "./Plots/plot poster/sales_with_promotions_over_time.png", 
+  plot = plot, 
+  width = 12,    # Larghezza del grafico
+  height = 6,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
-ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Product)) +
+plot2 <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Product)) +
   geom_point(size = 0.2) +
   geom_line(linewidth = 0.75) +
   labs(
@@ -231,8 +243,20 @@ ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Produ
     axis.text.x = element_text(size = 12),
     legend.title = element_text(size = 14),  
     legend.text = element_text(size = 12),
-    strip.text.y = element_text(size = 4)  
-  )
+    strip.text.y = element_text(size = 4), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/sales_without_promotions_over_time.png", 
+  plot = plot2, 
+  width = 12,    # Larghezza del grafico
+  height = 6,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
 ggplot(data, aes(x = Time, y = Vendite.in.Volume, color = Product)) +
   geom_point(size = 0.2) +
@@ -346,10 +370,10 @@ ggplot(data, aes(x = factor(Month), y = Sconto)) +
   theme_minimal() +
   scale_x_discrete(labels = month.abb)
 
-ggplot(data, aes(x = factor(Product), y = Vendite.in.Volume.log)) +
+plot3 <- ggplot(data, aes(x = factor(Product), y = Vendite.in.Volume.log)) +
   geom_boxplot(fill = "#D2691E", color = "black", outlier.size = 0.5) +
   labs(
-    title = "Sales (log) Distribution for Product",
+    title = "Sales Distribution for Product",
     x = "Product",
     y = "Sales Volume (log)"
   ) +
@@ -359,14 +383,26 @@ ggplot(data, aes(x = factor(Product), y = Vendite.in.Volume.log)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/box_sales_prod.png", 
+  plot = plot3, 
+  width = 8,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
 
-ggplot(data, aes(x = factor(Brand), y = Vendite.in.Volume.log)) +
+plot4 <- ggplot(data, aes(x = factor(Brand), y = Vendite.in.Volume.log)) +
   geom_boxplot(fill = "#D2691E", color = "black", outlier.size = 0.5) +
   labs(
-    title = "Sales (log) Distribution for Brand",
+    title = "Sales Distribution for Brand",
     x = "Brand",
     y = "Sales Volume (log)"
   ) +
@@ -376,10 +412,23 @@ ggplot(data, aes(x = factor(Brand), y = Vendite.in.Volume.log)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/box_sales_brand.png", 
+  plot = plot4, 
+  width = 8,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
-ggplot(data, aes(x = factor(Product), y = Sconto)) +
+
+plot5 <- ggplot(data, aes(x = factor(Product), y = Sconto)) +
   geom_boxplot(fill = "#1E90FF", color = "black", outlier.size = 0.5) +
   labs(
     title = "Discounts Distribution for Product",
@@ -392,11 +441,23 @@ ggplot(data, aes(x = factor(Product), y = Sconto)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/box_disc_prod.png", 
+  plot = plot5, 
+  width = 8,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
 
 
-ggplot(data, aes(x = factor(Brand), y = Sconto)) +
+plot6 <- ggplot(data, aes(x = factor(Brand), y = Sconto)) +
   geom_boxplot(fill = "#1E90FF", color = "black", outlier.size = 0.5) +
   labs(
     title = "Discounts Distribution for Brand",
@@ -409,8 +470,21 @@ ggplot(data, aes(x = factor(Brand), y = Sconto)) +
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7)
-  )
+    axis.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/box_disc_brand.png", 
+  plot = plot6, 
+  width = 8,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
 
 
 # Histrogram ---------------------------------------------------------------------
@@ -460,7 +534,7 @@ ggplot(data, aes(x = Vendite.in.Valore.Con.promozioni)) +
     axis.text = element_text(size = 12)
   )
 
-ggplot(data, aes(x = Vendite.in.Volume)) + 
+plot7 <- ggplot(data, aes(x = Vendite.in.Volume)) + 
   geom_histogram(binwidth = 5000, fill = "#1E90DC", color = "#333333") +
   labs(
     title = "Sales Distribution",
@@ -472,8 +546,21 @@ ggplot(data, aes(x = Vendite.in.Volume)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 7)
-  )
+    axis.text = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/hist_sales.png", 
+  plot = plot7, 
+  width = 8,    # Larghezza del grafico
+  height = 4,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
 
 ggplot(data, aes(x = Vendite.in.Volume.Senza.promozioni)) + 
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "darkgrey") +
