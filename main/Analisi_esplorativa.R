@@ -44,7 +44,9 @@ data <- data %>%
   mutate_at(vars(8:38), as.factor)
 
 data <- data %>%
-  mutate(Vendite.in.Volume.log = log(Vendite.in.Volume))
+  mutate(Vendite.in.Volume.Con.promozioni.log = log(Vendite.in.Volume.Con.promozioni),
+         Vendite.in.Volume.Senza.promozioni.log = log(Vendite.in.Volume.Senza.promozioni),
+         Vendite.in.Volume.log = log(Vendite.in.Volume))
 
 # Analisi esplorativa  -------------------------------------------------------------------
 
@@ -196,9 +198,9 @@ plot <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni, color =
   geom_point(size = 0.2) +
   geom_line(linewidth = 0.75) +
   labs(
-    title = "Sales with Promotions Over Time",
+    title = "Sales with Promotions over Time",
     x = "Week",
-    y = "Total Sales"
+    y = "Volume Sales"
   ) +
   facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") + 
   theme_minimal() +
@@ -225,13 +227,46 @@ ggsave(
   bg = "transparent"
 )
 
+plot <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni.log, color = Product)) + 
+  geom_point(size = 0.2) +
+  geom_line(linewidth = 0.75) +
+  labs(
+    title = "Sales with Promotions over Time",
+    x = "Week",
+    y = "Volume Sales (log)"
+  ) +
+  facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text.y = element_text(size = 7),    
+    axis.text.x = element_text(size = 12),
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12),
+    strip.text.y = element_text(size = 4), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )
+ggsave(
+  filename = "./Plots/plot poster/sales_with_promotions_over_time_log.png", 
+  plot = plot, 
+  width = 12,    # Larghezza del grafico
+  height = 6,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
 plot2 <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, color = Product)) +
   geom_point(size = 0.2) +
   geom_line(linewidth = 0.75) +
   labs(
-    title = "Sales without Promotions Over Time",
+    title = "Sales without Promotions over Time",
     x = "Week",
-    y = "Sales"
+    y = "Volume Sales"
   ) +
   facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") + 
   theme_minimal() +
@@ -251,6 +286,39 @@ plot2 <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni, colo
   )  
 ggsave(
   filename = "./Plots/plot poster/sales_without_promotions_over_time.png", 
+  plot = plot2, 
+  width = 12,    # Larghezza del grafico
+  height = 6,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
+plot2 <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni.log, color = Product)) +
+  geom_point(size = 0.2) +
+  geom_line(linewidth = 0.75) +
+  labs(
+    title = "Sales without Promotions over Time",
+    x = "Week",
+    y = "Volume Sales (log)"
+  ) +
+  facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text.y = element_text(size = 7),    
+    axis.text.x = element_text(size = 12),
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12),
+    strip.text.y = element_text(size = 4), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/sales_without_promotions_over_time_log.png", 
   plot = plot2, 
   width = 12,    # Larghezza del grafico
   height = 6,    # Altezza del grafico
