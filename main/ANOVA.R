@@ -30,6 +30,31 @@ data <- data %>%
   mutate(Vendite.in.Volume.log = log(Vendite.in.Volume))
 
 
+# Two way MANOVA --------------------------------------------------------
+
+factor1 <- factor(data$Brand) 
+factor2 <- factor(data$Product) 
+factor12 <- factor(paste(factor1, factor2, sep='-'))
+
+x <- data[, c("Vendite.in.Volume.log", "Sconto")]
+p <- dim(x)[2]
+n <- dim(x)[1]
+
+g <- length(levels(factor1))
+b <- length(levels(factor2))
+gb <- length(levels(factor12))
+
+# COMPLETE model WITH interaction
+fit <- manova(as.matrix(x) ~ factor1 + factor2 + factor1:factor2) 
+summary.manova(fit, test="Wilks") # no interaction
+
+# ADDITIVE model WITHOUT interaction
+fit2 <- manova(as.matrix(x) ~ factor1 + factor2) 
+summary.manova(fit2, test="Wilks") # reject H0
+
+summary.aov(fit2)
+# both are affected 
+
 # One way MANOVA - Brand --------------------------------------------------------
 # consideriamo le due risposte insieme e vediamo se cambia qualcosa
 
