@@ -3,6 +3,8 @@ library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(MASS)
+library(scales)
+library(gridExtra)
 
 
 data <- read.csv('./Datasets/top20_products.csv')
@@ -38,7 +40,9 @@ data <- data %>%
   mutate(Brand = recode(Brand, "BIRRIFICIO ANGELO PORETTI 3 LUPPOLI" = "PORETTI"))
 
 data <- data %>%
-  mutate(Vendor = recode(Vendor, "SWINKELS FAMILY BREWERS ITALIA" = "SWINKELS"))
+  mutate(Vendor = recode(Vendor, 
+                         "SWINKELS FAMILY BREWERS ITALIA" = "SWINKELS",
+                         "GRUPPO HEINEKEN" = "HEINEKEN"))
 
 data <- data %>%
   mutate_at(vars(8:38), as.factor)
@@ -236,16 +240,17 @@ plot <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Con.promozioni.log, col
     y = "Volume Sales (log)"
   ) +
   facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") + 
+  scale_y_continuous(breaks = pretty_breaks(n = 3)) +
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text.y = element_text(size = 7),    
+    axis.text.y = element_text(size = 10),    
     axis.text.x = element_text(size = 12),
     legend.title = element_text(size = 14),  
     legend.text = element_text(size = 12),
-    strip.text.y = element_text(size = 4), 
+    strip.text.y = element_text(size = 7), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -301,17 +306,18 @@ plot2 <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni.log, 
     x = "Week",
     y = "Volume Sales (log)"
   ) +
-  facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") + 
+  facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") +
+  scale_y_continuous(breaks = pretty_breaks(n = 3)) +
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text.y = element_text(size = 7),    
+    axis.text.y = element_text(size = 10),    
     axis.text.x = element_text(size = 12),
     legend.title = element_text(size = 14),  
     legend.text = element_text(size = 12),
-    strip.text.y = element_text(size = 4), 
+    strip.text.y = element_text(size = 7), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -319,6 +325,75 @@ plot2 <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni.log, 
   )  
 ggsave(
   filename = "./Plots/plot poster/sales_without_promotions_over_time_log.png", 
+  plot = plot2, 
+  width = 12,    # Larghezza del grafico
+  height = 6,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
+plot2 <- ggplot(data, aes(x = Time, y = Vendite.in.Volume.Senza.promozioni.log, color = Product)) +
+  geom_point(size = 0.2) +
+  geom_line(linewidth = 0.75) +
+  labs(
+    title = "Sales without Promotions over Time",
+    x = "Week",
+    y = "Volume Sales (log)"
+  ) +
+  facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") +
+  scale_y_continuous(breaks = pretty_breaks(n = 3)) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text.y = element_text(size = 10),    
+    axis.text.x = element_text(size = 12),
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12),
+    strip.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )  
+ggsave(
+  filename = "./Plots/plot poster/sales_without_promotions_over_time_log.png", 
+  plot = plot2, 
+  width = 12,    # Larghezza del grafico
+  height = 6,    # Altezza del grafico
+  units = "in",  # Unità di misura (può essere "in", "cm", o "mm")
+  bg = "transparent"
+)
+
+unique_vendors <- unique(data$Vendor)
+last_vendor <- tail(unique_vendors, 1)
+
+plot2 <- ggplot(subset(data, Vendor == last_vendor), aes(x = Time, y = Vendite.in.Volume.Senza.promozioni.log, color = Product)) +
+  geom_point(size = 0.2) +
+  geom_line(linewidth = 0.75) +
+  labs(
+    x = "Week",
+    y = "Volume Sales (log)"
+  ) +
+  facet_grid(Vendor ~ ., scales = "free_y", space = "free_y") +
+  scale_y_continuous(breaks = pretty_breaks(n = 3)) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 14),  
+    axis.title.y = element_text(size = 14),  
+    axis.text.y = element_text(size = 10),    
+    axis.text.x = element_text(size = 12),
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12),
+    strip.text.y = element_text(size = 7), 
+    panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
+    panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
+    panel.grid.minor = element_line(color = "#333333", linewidth = 0.2)  # Griglia minore grigia tratteggiata
+  )
+ggsave(
+  filename = "./Plots/plot poster/sales_without_promotions_over_time_log2.png", 
   plot = plot2, 
   width = 12,    # Larghezza del grafico
   height = 6,    # Altezza del grafico
@@ -450,8 +525,8 @@ plot3 <- ggplot(data, aes(x = factor(Product), y = Vendite.in.Volume.log)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -479,8 +554,8 @@ plot4 <- ggplot(data, aes(x = factor(Brand), y = Vendite.in.Volume.log)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -508,8 +583,8 @@ plot5 <- ggplot(data, aes(x = factor(Product), y = Sconto)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -537,8 +612,8 @@ plot6 <- ggplot(data, aes(x = factor(Brand), y = Sconto)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -614,7 +689,7 @@ plot7 <- ggplot(data, aes(x = Vendite.in.Volume)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 7), 
+    axis.text = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia

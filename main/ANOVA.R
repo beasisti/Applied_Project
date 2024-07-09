@@ -432,8 +432,8 @@ p <- ggplot(data, aes(x = factor(Tipo_sconto), y = Vendite.in.Volume.log)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia

@@ -254,7 +254,7 @@ plot <- ggplot(model_data, aes(.fitted, .resid)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 7), 
+    axis.text = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -281,7 +281,7 @@ plot <- ggplot(qq_data, aes(theoretical, sample)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), 
     axis.title.x = element_text(size = 14),  
     axis.title.y = element_text(size = 14),  
-    axis.text = element_text(size = 7), 
+    axis.text = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -501,8 +501,8 @@ plot <- ggplot(data, aes(x = factor(Product), y = residuals(model.5.1))) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -613,8 +613,9 @@ p1 <- ggplot(ranef_df, aes(x = `(Intercept)_estimate`, y = grp)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10), 
+    strip.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -636,8 +637,9 @@ p2 <- ggplot(ranef_df, aes(x = `Prezzo_Sconto.log_estimate`, y = grp)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10), 
+    strip.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -658,8 +660,9 @@ p3 <- ggplot(ranef_df, aes(x = `Prezzo_NoSconto.log_estimate`, y = grp)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10), 
+    strip.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -735,8 +738,10 @@ plot <- ggplot(result.moretti, aes(x = Data)) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10), 
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12),
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -804,8 +809,8 @@ plot <- ggplot(data, aes(x = factor(Brand), y = residuals(model.5.1))) +
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10), 
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
@@ -1013,8 +1018,10 @@ plot <- ggplot(model_summary_combined, aes(y = term_offset, x = estimate, color 
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 7),
-    axis.text.y = element_text(size = 7), 
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10), 
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 12),
     panel.background = element_rect(fill = "transparent", color = NA),  # Sfondo trasparente
     plot.background = element_rect(fill = "transparent", color = NA),   # Sfondo trasparente per l'intera trama
     panel.grid.major = element_line(color = "#333333", linewidth = 0.2),  # Griglia maggiore grigia
